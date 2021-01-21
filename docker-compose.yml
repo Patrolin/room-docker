@@ -44,6 +44,5 @@ services:
       image: phpmyadmin/phpmyadmin
       restart: always
       environment:
-        PMA_HOST: database
-        PMA_ARBITRARY: 1
+        PMA_HOST: database # same as PDO("host=")
         MYSQL_ROOT_PASSWORD: groot

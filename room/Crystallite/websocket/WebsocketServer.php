@@ -15,9 +15,9 @@ abstract class Server extends \http\Server
     $conn = $this->connections[$i];
 
     if ($conn instanceof \websocket\Connection) {
-      try{
+      try {
         $this->websocketHeartbeat($i);
-      } catch(\error\ConnectionClosed $e){ // I shouldn't have to do this, but PHP errors are terrible
+      } catch (\error\ConnectionClosed $e) { // I shouldn't have to do this, but PHP errors are terrible
         // pass
       }
       if (isset($this->connections[$i]))
@@ -34,10 +34,10 @@ abstract class Server extends \http\Server
     switch ($conn->state) {
       case \Connection::OPEN:
         $now = \utils\process_time();
-        if(($now - $conn->lastPong) > self::heartbeatMax){
+        if (($now - $conn->lastPong) > self::heartbeatMax) {
           $conn->close();
           return;
-        } else if(($now - $conn->lastPing) > self::heartbeatMin){
+        } else if (($now - $conn->lastPing) > self::heartbeatMin) {
           $conn->send(\websocket\createMessage(1, \websocket\PING));
           $conn->lastPing = \utils\process_time();
         }
@@ -51,7 +51,7 @@ abstract class Server extends \http\Server
 
           switch ($opcode) {
             case \websocket\CLOSE:
-              if($conn->state !== \Connection::CLOSED)
+              if ($conn->state !== \Connection::CLOSED)
                 $conn->close();
               break;
             case \websocket\PING:
@@ -139,9 +139,9 @@ abstract class Server extends \http\Server
           $conn->send($r);
         return;
       } else if ($response === null)
-        $response = \http\createResponse("501 Not Implemented");
+        $response = \http\createResponse(\http\NOTIMPLEMENTED);
     } else
-      $response = \http\createResponse("426 Upgrade Required", ["Sec-WebSocket-Version" => "13"]);
+      $response = \http\createResponse(\http\UPGRADEREQUIRED, ["Sec-WebSocket-Version" => "13"]);
 
     $conn->send($response);
     $conn->close();

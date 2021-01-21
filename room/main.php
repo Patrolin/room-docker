@@ -24,7 +24,6 @@ class App extends websocket\Server
   function __construct(...$args)
   {
     $this->database = new Database("room", "root", "groot");
-    $this->database->register("lin");
     parent::__construct(...$args);
   }
 
@@ -36,6 +35,7 @@ class App extends websocket\Server
       "method" => $method,
       "path" => $path,
       "headers" => $headers,
+      "body" => $body,
     ] = http\parseRequest($conn->request);
 
     $responseHeaders = [];
@@ -69,7 +69,7 @@ class App extends websocket\Server
           $response = http\createResponse(http\OK, $responseHeaders, file_get_contents("client/index.html"));
         else {
           $responseHeaders["Location"] = "http://" . $this->host . ":" . $this->port . "/login";
-          $response = http\createResponse("303 Temporary Redirect", $responseHeaders);
+          $response = http\createResponse(\http\TEMPORARYREDIRECT, $responseHeaders);
         }
         break;
       case "./login":
@@ -85,9 +85,9 @@ class App extends websocket\Server
         if ($method === "GET")
           $response = http\createResponse(http\OK, $responseHeaders, file_get_contents("client/register.html"));
         else if ($method === "POST") {
-          //$this->database->register();
+          $this->database->register("lin");
           $responseHeaders["Location"] = "http://" . $this->host . ":" . $this->port . "/";
-          $response = http\createResponse("303 Temporary Redirect", $responseHeaders);
+          $response = http\createResponse(\http\TEMPORARYREDIRECT, $responseHeaders);
         }
         break;
       default:
