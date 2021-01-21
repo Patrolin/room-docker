@@ -68,30 +68,31 @@ document.addEventListener('DOMContentLoaded', () => {
   document.head.append(style);
 
   style.sheet.insertRule(`
-		* {
-			box-sizing: border-box;
-			margin: 0;
-			padding: 0;
-			max-width: 100%;
-			/*max-height: 100%;*/
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      max-width: 100%;
+      /*max-height: 100%;*/
       font-family: Arial, sans-serif;
-      transition: all .5s ease-in-out;
-		}
-	`);
+      transition: opacity 0s;
+      /*transition: top, left, width, height .5s ease-in-out;*/ /* chrome doesn't want to animate top, left */
+    }
+  `);
   style.sheet.insertRule(`
-		html, body {
-			width: 100%;
-			height: 100%;
-		}
-	`);
+    html, body {
+      width: 100%;
+      height: 100%;
+    }
+  `);
   style.sheet.insertRule(`
-		b, text, input, output {
-			display: inline-flex;
-			justify-content: center;
-			align-items: center;
-			text-align: center; /* input is dumb */
-		}
-	`);
+    b, text, input, output {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center; /* input is dumb */
+    }
+  `);
   style.sheet.insertRule(`
     [disabled] {
       display: none;
@@ -134,6 +135,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
 Component_ = Component;
 Component = class Component extends Component_ {
+  load(){
+    if(this.e.hasAttribute('disabled')) this.e.style.opacity = 0;
+    this.disabledAnimation = null;
+  }
+  set disabled(value) {
+    super.disabled = value;
+    if(this.disabledAnimation !== null) {
+      clearInterval(this.disabledAnimation[0]);
+      this.disabledAnimation = null;
+    }
+    if(value)
+      this.e.style.opacity = 0;
+    else
+      this.disabledAnimation = [
+        setInterval(function(){
+          const DURATION = 0.5;
+          var d = new Date;
+          var t = (d-this.disabledAnimation[1]) / 1000;
+          if(t < DURATION){
+            console.log(t / DURATION);
+            this.e.style.opacity = (t / DURATION);
+          } else{
+            console.log(1);
+            this.e.style.opacity = 1;
+            clearInterval(this.disabledAnimation[0]);
+            this.disabledAnimation = null;
+          }
+        }.bind(this), 33),
+        new Date
+      ];
+  }
+
   render() {
     var children = this.getRenderChildren();
     var size = this.size;
@@ -335,6 +368,7 @@ defineComponent('input', InputComponent);
 
 class PasswordComponent extends InputComponent {
   load(){
+    super.load();
     if(!this.e.hasAttribute('minlength'))
       this.e.minLength = 8;
   }

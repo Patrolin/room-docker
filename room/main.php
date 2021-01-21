@@ -33,10 +33,11 @@ class App extends websocket\Server
 
     [
       "method" => $method,
-      "path" => $path,
+      "url" => $url,
       "headers" => $headers,
       "body" => $body,
     ] = http\parseRequest($conn->request);
+    $path = $url["path"];
 
     $responseHeaders = [];
 
@@ -68,16 +69,29 @@ class App extends websocket\Server
         if (true || isset($_SESSION))
           $response = http\createResponse(http\OK, $responseHeaders, file_get_contents("client/index.html"));
         else {
-          $responseHeaders["Location"] = "http://" . $this->host . ":" . $this->port . "/login";
+          $responseHeaders["Location"] = $headers["Origin"][0] . "/login";
           $response = http\createResponse(\http\TEMPORARYREDIRECT, $responseHeaders);
         }
         break;
       case "./login":
       case "./login/":
-        if ($method === "GET")
-          $response = http\createResponse(http\OK, $responseHeaders, file_get_contents("client/login.html"));
-        else if ($method === "POST") {
-          $response = http\createResponse(http\NOTIMPLEMENTED, $responseHeaders, file_get_contents("client/login.html"));
+        switch ($method) {
+          case "GET":
+            $response = http\createResponse(http\OK, $responseHeaders, file_get_contents("client/login.html"));
+            break;
+          case "POST":
+            $query = \utils\parse_query($body);
+            var_dump($query);
+            switch ($query["login"]) {
+              case "Register":
+                $this->database->register($query);
+                break;
+              case "Login":
+                break;
+            }
+            $responseHeaders["Location"] = $headers["Origin"][0] . "/login";
+            $response = http\createResponse(\http\SEEOTHER, $responseHeaders);
+            break;
         }
         break;
       case "./register":
@@ -113,8 +127,9 @@ class App extends websocket\Server
   {
     $conn = $this->connections[$i];
     [
-      "path" => $path,
+      "url" => $url,
     ] = http\parseRequest($conn->request);
+    $path = $url["path"];
 
     switch ($path) {
       case "/chat":

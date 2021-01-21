@@ -40,32 +40,17 @@ function parseRequest(string $request)
   $lines = explode("\r\n", $request);
 
   preg_match('/(^[A-Z]+) (.+) HTTP\/([\d\.]+)/', $lines[0], $match);
-  \error\assert($match !== [], "Must be a valid http request", "BadRequest");
-  [$_, $method, $path, $version] = $match;
+  \error\assert($match !== [], "Invalid http request", "BadRequest");
+  [$_, $method, $raw_url, $version] = $match;
+  $url = parse_url($raw_url);
+  \error\assert($url !== false, "Invalid http url", "BadRequest");
 
   $headers = [];
   for ($i = 1; $i < sizeof($lines); $i++) {
+    if (strlen($lines[$i]) === 0)
+      break;
     preg_match('/(.+?): (.*)/', $lines[$i], $match);
-    if (strlen($lines[$i]) === 0) {
-      switch ($method) {
-        case "HEAD":
-        case "GET":
-        case "CONNECT":
-        case "OPTIONS":
-        case "TRACE":
-          $hasBody = false;
-          break 2;
-        case "POST":
-        case "PUT":
-        case "DELETE":
-        case "PATCH":
-          $hasBody = true;
-          break 2;
-        default:
-          \error\assert(false, "$method not supported", "NotImplemented");
-      }
-    }
-    \error\assert($match !== [], "Must be a valid http request", "BadRequest");
+    \error\assert($match !== [], "Invalid http headers", "BadRequest");
     if (isset($headers[$match[1]]))
       $headers[$match[1]] .= ", " . $match[2];
     else
@@ -75,6 +60,23 @@ function parseRequest(string $request)
     $headers[$k] = explode(", ", $v);
 
 
+  switch ($method) {
+    case "HEAD":
+    case "GET":
+    case "CONNECT":
+    case "OPTIONS":
+    case "TRACE":
+      $hasBody = false;
+      break;
+    case "POST":
+    case "PUT":
+    case "DELETE":
+    case "PATCH":
+      $hasBody = true;
+      break;
+    default:
+      \error\assert(false, "$method not supported", "NotImplemented");
+  }
   if ($hasBody) {
     $body = [];
     for ($i++; $i < sizeof($lines); $i++) {
@@ -86,7 +88,7 @@ function parseRequest(string $request)
 
   return [
     "method" => $method,
-    "path" => $path,
+    "url" => $url,
     "version" => +$version,
     "headers" => $headers,
     "body" => $body,
