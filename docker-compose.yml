@@ -9,10 +9,10 @@ services:
       - my-network
     depends_on:
       - database
+    restart: "no"
     volumes:
       - ./room:/app
     build: .
-    restart: "no"
     ports:
       - 8080:8080
 
@@ -20,13 +20,11 @@ services:
     networks:
       - my-network
     image: mysql
-    restart: "no"
-    environment:
-      MYSQL_ROOT_PASSWORD: "groot"
-    ports:
-      - "3306:3306"
+    restart: always
     volumes:
       - ./room:/app # TODO: don't clone entire project
+    environment:
+      MYSQL_ROOT_PASSWORD: "groot"
     command: --init-file /app/database/init.sql --default-authentication-plugin=mysql_native_password
 
   phpmyadmin:
@@ -36,8 +34,8 @@ services:
         - database
       image: phpmyadmin/phpmyadmin
       restart: always
-      ports:
-        - 8088:80
       environment:
         PMA_HOST: database
         MYSQL_ROOT_PASSWORD: groot
+      ports:
+        - 8088:80
