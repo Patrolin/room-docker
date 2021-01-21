@@ -1,3 +1,7 @@
+# ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '1234';
+
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+SET time_zone = "+01:00";
 
 CREATE DATABASE IF NOT EXISTS `room`;
 USE `room`;

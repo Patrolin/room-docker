@@ -7,22 +7,29 @@ namespace database;
 
 class Database
 {
-  function __contruct($dbname, $username = "root", $password = "")
+  protected $conn;
+
+  function __construct($dbname, $username = "root", $password = "")
   {
-    $this->conn = new \PDO("mysql:host=localhost;dbname=$dbname", $username, $password);
+    var_dump([$dbname, $username, $password]);
+    $this->conn = new \PDO("mysql:host=database;dbname=$dbname", $username, $password);
     $this->conn->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
     $this->conn->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
     $this->conn->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_NAMED);
   }
 
-  function register($email, $username)
+  function getUUID($username)
   {
-    $stmt = $this->conn->prepare("SELECT uid FROM `users` WHERE email = :email OR username = :username");
+    $stmt = $this->conn->prepare("SELECT uid FROM `users` WHERE username = :username");
     $stmt->execute([
-      ":email" => $email,
       ":username" => $username
     ]);
-    var_dump($stmt->fetch());
+    return $stmt->fetch();
+  }
+  function register($username)
+  {
+    $UUID = $this->getUUID($username);
+    var_dump($UUID);
   }
 
   function login()

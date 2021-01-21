@@ -24,6 +24,7 @@ class App extends websocket\Server
   function __construct(...$args)
   {
     $this->database = new Database("room", "root", "groot");
+    $this->database->register("lin");
     parent::__construct(...$args);
   }
 
@@ -151,7 +152,6 @@ class App extends websocket\Server
 }
 
 $port = getenv('APP_PORT');
-if ($port === false)
-  $port = "8080";
+$port = $port ? $port : "8080";
 $server = new App("0.0.0.0", (int) $port);
 $server->run();
