@@ -20,7 +20,7 @@ class Database
 
   function getUUID($username)
   {
-    $stmt = $this->conn->prepare("SELECT uid FROM `users` WHERE username = :username");
+    $stmt = $this->conn->prepare("SELECT uuid FROM `users` WHERE username = :username");
     $stmt->execute([
       ":username" => $username
     ]);
@@ -29,11 +29,15 @@ class Database
   function register(array $query)
   {
     $UUID = $this->getUUID($query["username"]);
+    if ($UUID === false) {
+      // TODO: implement Register
+    }
     var_dump($UUID);
   }
 
   function login()
   {
+    // TODO: implement Login
   }
 
   function createSession(array $value, int $expire = null)
