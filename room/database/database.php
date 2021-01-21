@@ -26,9 +26,9 @@ class Database
     ]);
     return $stmt->fetch();
   }
-  function register($username)
+  function register(array $query)
   {
-    $UUID = $this->getUUID($username);
+    $UUID = $this->getUUID($query["username"]);
     var_dump($UUID);
   }
 

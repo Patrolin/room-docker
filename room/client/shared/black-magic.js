@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
       padding: 0;
       max-width: 100%;
       /*max-height: 100%;*/
-      font-family: Arial, sans-serif;
+      font-family: Helvetica, sans-serif;
       transition: opacity 0s;
       /*transition: top, left, width, height .5s ease-in-out;*/ /* chrome doesn't want to animate top, left */
     }
@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
     var style = getComputedStyle(e);
     ctx.font = `1px ${style.fontFamily}`;
     var m = ctx.measureText(text);
-    var width = m.actualBoundingBoxRight - m.actualBoundingBoxLeft;
+    var width = Math.max(m.width, m.actualBoundingBoxRight - m.actualBoundingBoxLeft); // what the fuck?
     var lines = text.split('\n').length + e.q(/br/g).length;
 
     // TODO: support multiple lines
@@ -154,10 +154,8 @@ Component = class Component extends Component_ {
           var d = new Date;
           var t = (d-this.disabledAnimation[1]) / 1000;
           if(t < DURATION){
-            console.log(t / DURATION);
             this.e.style.opacity = (t / DURATION);
           } else{
-            console.log(1);
             this.e.style.opacity = 1;
             clearInterval(this.disabledAnimation[0]);
             this.disabledAnimation = null;
@@ -327,7 +325,9 @@ defineComponent('stack', StackComponent);
 
 class TextComponent extends Component {
   render(){
-    this.renderText(this.size);
+    var size = this.size;
+    var contentSize = this.contentSize(2, size);
+    this.renderText(this.size, contentSize);
   }
 }
 defineComponent('text, output, b, em, i, s', TextComponent);
