@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<head>
+  <script src="shared/qPact.js"></script>
+  <script src="shared/black-magic.js"></script>
+  <style>
+    form {
+      background: lightgray;
+    }
+  </style>
+  <script>
+    class App extends Component {
+      getLogin(){
+        return this.e.q(/[name="login"]:checked/).value;
+      }
+      load() {
+        this.password1 = this.e.q(/[name="password1"]/);
+        this.password2 = this.e.q(/[name="password2"]/);
+        this.password2Row = this.e.q(/#password2/);
+      }
+      onalter(ev) {
+        var login = this.getLogin();
+        if (ev.srcElement.name === 'login') {
+          switch (login) {
+            case 'Login':
+              this.password1.autocomplete = 'current-password';
+              this.password2.autocomplete = 'off';
+              this.password2.required = false;
+              this.password2Row.c.disabled = true;
+              break;
+            case 'Register':
+              this.password1.autocomplete = 'new-password';
+              this.password2.autocomplete = 'new-password';
+              this.password2.required = true; // updates validity
+              this.password2Row.c.disabled = false;
+              break;
+          }
+          this.validate();
+          this.render();
+        } else {
+          switch(ev.srcElement){
+            case this.password1:
+            case this.password2:
+              this.validate();
+              ev.srcElement.reportValidity();
+            break;
+          }
+        }
+      }
+      validate(){
+        var validity = this.getLogin() === 'Register'
+        && this.password1.c.validity
+        && this.password2.c.validity
+        && this.password1.value !== this.password2.value
+          ? 'Passwords must match' // TODO: localize?
+          : '';
+        this.password1.c.validity = validity;
+        this.password2.c.validity = validity;
+      }
+      onclick(ev){
+        if(ev.srcElement.localName !== 'input') {
+          for(var f of this.e.q(/input/g))
+            if(!f.c.validity) {
+              f.reportValidity();
+              return;
+            }
+          this.password2.reportValidity();
+        }
+      }
+    }
+    defineComponent('app', App);
+  </script>
+</head>
+
+<body>
+  <app padding>
+    <form br="0.02" method="POST">
+      <row id="login">
+        <label for="login-Login">
+          <input name="login" type="radio" value="Login" checked />
+          <text dvalue="Register">Login</text>
+        </label>
+        <label for="login-Register">
+          <input name="login" type="radio" value="Register" />
+          <text>Register</text>
+        </label>
+      </row>
+      <row>
+        <text w="0.5" dvalue="Password">Email:</text>
+        <input required name="email" type="text" autocomplete="email" autofocus />
+      </row>
+      <row>
+        <text w="0.5">Password:</text>
+        <input required name="password1" type="password" autocomplete="current-password" />
+      </row>
+      <row disabled id="password2">
+        <text disabled w="0.5">Password:</text>
+        <input disabled name="password2" type="password" autocomplete="off" />
+      </row>
+      <row>
+        <input type="submit" value="Submit" />
+      </row>
+    </form>
+  </app>
+</body>
