@@ -2,6 +2,7 @@
 <head>
   <script src="shared/qPact.js"></script>
   <script src="shared/black-magic.js"></script>
+  <script src="shared/http.js"></script>
   <style>
     form {
       background: lightgray;
@@ -9,14 +10,18 @@
   </style>
   <script>
     class App extends Component {
-      getLogin() {
-        return this.e.q(/[name="login"]:checked/).value;
-      }
       load() {
         super.load();
-        this.password1 = this.e.q(/[name="password1"]/);
-        this.password2 = this.e.q(/[name="password2"]/);
-        this.password2Row = this.e.q(/#password2/);
+        this.form = this.e.q(/form/);
+        this.username = this.form.q(/input[name="username"]/);
+        this.usernameNonce = 0;
+        this.password1 = this.form.q(/input[name="password1"]/);
+        this.password2 = this.form.q(/input[name="password2"]/);
+        this.password2Row = this.form.q(/#password2/);
+        this.submit = this.form.q(/input[type="submit"]/);
+      }
+      getLogin() {
+        return this.e.q(/input[name="login"]:checked/).value;
       }
       onalter(ev) {
         var login = this.getLogin();
@@ -35,21 +40,63 @@
               this.password2Row.c.disabled = false;
               break;
           }
-          this.validate();
+          this.validateUsername(login);
+          this.validatePassword(login);
           this.render();
         } else {
           switch (ev.srcElement) {
+            case this.username:
+              this.validateUsername(login, true);
+              break;
             case this.password1:
             case this.password2:
-              this.validate();
+              this.validatePassword(login);
               ev.srcElement.reportValidity();
+              break;
+            case this.submit:
+              if (!this.e.q(/form:invalid/))
+                fetchTxt(window.location.href, {
+                  method: this.form.method,
+                  body: createRequestBody({
+                    login,
+                    username: this.username.value,
+                    password1: this.password1.value,
+                    //password2: this.password1.value, // redundant
+                  }),
+                }).then((x) => {
+                  document.cookie = x;
+                  // TODO: redirect
+                });
               break;
           }
         }
       }
-      validate() {
+      validateUsername(login, report = false) {
+        this.username.c.validity = '';
+        var requestNonce = ++this.usernameNonce;
+        fetchTxt(window.location.href, {
+          method: this.form.method,
+          body: createRequestBody({
+            login: login,
+            username: this.username.value,
+          }),
+        }).then((x) => {
+          if (this.username.value && requestNonce === this.usernameNonce) {
+            switch (login) {
+              case 'Register':
+                if (!x) this.username.c.validity = 'Username is taken';
+                break;
+              case 'Login':
+                if (x) this.username.c.validity = 'Invalid username';
+                break;
+            }
+            if (report) this.username.reportValidity();
+          }
+        });
+      }
+      validatePassword(login) {
         var validity =
-          this.getLogin() === 'Register' &&
+          login === 'Register' &&
           this.password1.c.validity &&
           this.password2.c.validity &&
           this.password1.value !== this.password2.value
@@ -75,7 +122,7 @@
 
 <body>
   <app padding>
-    <form br="0.02" method="POST">
+    <form br="0.02" method="POST" action="javascript:void(0);">
       <row id="login">
         <label for="login-Login">
           <input name="login" type="radio" value="Login" checked />

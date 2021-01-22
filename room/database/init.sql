@@ -7,18 +7,23 @@ SET time_zone = "+01:00";
 CREATE DATABASE IF NOT EXISTS `room`;
 USE `room`;
 
-CREATE TABLE IF NOT EXISTS `sessions` (
+CREATE TABLE IF NOT EXISTS `routing` ( # table=0
+  `uuid` BIGINT NOT NULL, # u64
+  `table` TINYINT NOT NULL, # u8
+  PRIMARY KEY (`uuid`)
+);
+
+CREATE TABLE IF NOT EXISTS `users` ( # table=1
+  `uuid` BIGINT NOT NULL,
+  `username` VARCHAR(255) NOT NULL,
+  `hash` VARCHAR(255) NOT NULL,
+  PRIMARY KEY (`uuid`),
+  UNIQUE (`username`)
+);
+
+CREATE TABLE IF NOT EXISTS `sessions` ( # table=2
   `token` BINARY(32) NOT NULL,
   `expire` TIMESTAMP NOT NULL,
   `uuid` BINARY(16) NOT NULL,
-  `json` VARCHAR(255) NOT NULL,
-  PRIMARY KEY (`token`),
-);
-
-CREATE TABLE IF NOT EXISTS `users` (
-  `uuid` BINARY(16) NOT NULL,
-  `username` VARCHAR(255) NOT NULL,
-  `password` VARCHAR(255) NOT NULL,
-  PRIMARY KEY (`uuid`),
-  UNIQUE `username`,
+  PRIMARY KEY (`token`)
 );

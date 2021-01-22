@@ -21,6 +21,17 @@ function process_time(): float
   return microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"];
 }
 
+function random_bytes($bytes): string
+{
+  while (true) {
+    try {
+      return \random_bytes($bytes);
+    } catch (\Exception $e) {
+      sleep(0.1);
+    }
+  }
+}
+
 
 function getCurrentFile(): string
 {
@@ -43,7 +54,9 @@ function parse_query(string $str): array
   # loop through each pair
   foreach ($pairs as $i) {
     # split into name and value
-    list($name, $value) = explode('=', $i, 2);
+    $e = explode('=', $i, 2);
+    $name = $e[0];
+    $value = $e[1] ?? null;
 
     # if name already exists
     if (isset($arr[$name])) {

@@ -374,3 +374,10 @@ class PasswordComponent extends InputComponent {
   }
 }
 defineComponent('input[type="password"]', PasswordComponent);
+
+class ButtonComponent extends InputComponent {
+  onclick(){
+    this.alter();
+  }
+}
+defineComponent('button, input[type="button"], input[type="submit"]', ButtonComponent);

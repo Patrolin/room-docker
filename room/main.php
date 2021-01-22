@@ -10,7 +10,7 @@ include_once "Crystallite/websocket/websocket.php";
 use database\Database;
 
 define('debug\MAIN', debug\nextLevel());
-debug\setLevel(debug\STATISTICS);
+debug\setLevel(debug\NONE);
 
 define('ROOT', getcwd());
 
@@ -24,6 +24,10 @@ class App extends websocket\Server
   function __construct(...$args)
   {
     $this->database = new Database("room", "root", "groot");
+    $this->database->register(0, [
+      "username" => "lin",
+      "password1" => "asdasdasd",
+    ]);
     parent::__construct(...$args);
   }
 
@@ -80,29 +84,41 @@ class App extends websocket\Server
             $response = http\createResponse(http\OK, $responseHeaders, file_get_contents("client/login.html"));
             break;
           case "POST":
+            var_dump($body);
             $query = \utils\parse_query($body);
-            var_dump($query);
+            if (!isset($query["login"]))
+              break;
             switch ($query["login"]) {
               case "Register":
-                $this->database->register($query);
-                break;
+                try {
+                  $register = $this->database->register(null, $query);
+                } catch (\error\IncompleteRequest $e) {
+                }
+                $response = \http\createResponse(
+                  \http\OK,
+                  [],
+                  $register,
+                );
+                break 2;
               case "Login":
+                try {
+                  $login = $this->database->login($query);
+                } catch (\error\IncompleteRequest $e) {
+                }
+                $response = \http\createResponse(
+                  \http\OK,
+                  [],
+                  $login,
+                );
                 break;
             }
-            $responseHeaders["Location"] = $headers["Origin"][0] . "/login";
-            $response = http\createResponse(\http\SEEOTHER, $responseHeaders);
-            break;
+            if (!isset($response)) {
+              $responseHeaders["Location"] = $headers["Origin"][0] . "/login";
+              $response = http\createResponse(\http\SEEOTHER, $responseHeaders); // forces GET
+              break;
+            }
         }
-        break;
-      case "./register":
-      case "./register/":
-        if ($method === "GET")
-          $response = http\createResponse(http\OK, $responseHeaders, file_get_contents("client/register.html"));
-        else if ($method === "POST") {
-          $this->database->register("lin");
-          $responseHeaders["Location"] = "http://" . $this->host . ":" . $this->port . "/";
-          $response = http\createResponse(\http\TEMPORARYREDIRECT, $responseHeaders);
-        }
+        if (!isset($response)) $response = \http\createResponse(\http\BADREQUEST);
         break;
       default:
         chdir('./client');
