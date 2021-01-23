@@ -2,105 +2,103 @@
 <head>
   <script src="shared/qPact.js"></script>
   <script src="shared/black-magic.js"></script>
-	<style>
-		body{
-			margin: 0;
-		}
-		body > *{
-			width: 100%;
-		}
-		output{
-			white-space: pre;
-		}
-	</style>
-	<script>
-		class MessageInputComponent extends InputComponent {
-			oninput(ev){
-				this.render();
-			}
-			onkeydown(ev){
-				if(ev.key === 'Enter' && this.e.value)
-					this.alter();
-			}
-			clearMessage(){
-				this.e.value = '';
-			}
-		}
-		defineComponent('input[type="text"][msg]', MessageInputComponent);
+  <script src="shared/http.js"></script>
+  <style>
+    body {
+      margin: 0;
+    }
+    body > * {
+      width: 100%;
+    }
+    output {
+      white-space: pre;
+    }
+  </style>
+  <script>
+    class MessageInputComponent extends InputComponent {
+      oninput(ev) {
+        this.render();
+      }
+      onkeydown(ev) {
+        if (ev.key === 'Enter' && this.e.value) this.alter();
+      }
+      clearMessage() {
+        this.e.value = '';
+      }
+    }
+    defineComponent('input[type="text"][msg]', MessageInputComponent);
 
-		class App extends Component {
-			initSocket(s){
-				this.s = new WebSocket(`ws://${location.host}/chat`);
-				for(var k of this.constructor.socketEvents)
-					this.s.addEventListener(k, this[`at${k}`].bind(this));
-			}
-			load(){
-				this.initSocket();
-				this.queue = [];
-				this.sendInterval = null;
+    class App extends Component {
+      initSocket(s) {
+        this.s = new WebSocket(`ws://${location.host}/chat`);
+        for (var k of this.constructor.socketEvents)
+          this.s.addEventListener(k, this[`at${k}`].bind(this));
+      }
+      load() {
+        this.initSocket();
+        this.queue = [];
+        this.sendInterval = null;
 
-				[this.content, this.overlay] = this.e.q(/stack div/g);
-				this.output = this.e.q(/output/);
-				this.input = this.e.q(/input/);
+        [this.content, this.overlay] = this.e.q(/stack div/g);
+        this.output = this.e.q(/output/);
+        this.input = this.e.q(/input/);
 
-				this.overlayOutput = this.overlay.q(/output/);
-			}
+        this.overlayOutput = this.overlay.q(/output/);
+      }
 
-			atopen(ev){
-				this.content.removeAttribute('blur');
-				this.overlay.setAttribute('disabled', '');
-			}
-			atclose(ev){
-				this.content.setAttribute('blur', '');
-				this.overlay.removeAttribute('disabled');
-				this.overlayOutput.value = 'Connection lost';
-				setTimeout(this.initSocket.bind(this), 5000);
-			}
+      atopen(ev) {
+        this.content.removeAttribute('blur');
+        this.overlay.setAttribute('disabled', '');
+      }
+      atclose(ev) {
+        this.content.setAttribute('blur', '');
+        this.overlay.removeAttribute('disabled');
+        this.overlayOutput.value = 'Connection lost';
+        setTimeout(this.initSocket.bind(this), 5000);
+      }
 
-			onalter(ev){
-				if(ev.srcElement === this.input){
-					this.sendMessage(this.input.value);
-					this.input.value = '';
-				}
-			}
-			sendMessage(value){
-				this.output.value += `${value}\n`;
-				this.output.c.render();
+      onalter(ev) {
+        if (ev.srcElement === this.input) {
+          this.sendMessage(this.input.value);
+          this.input.value = '';
+        }
+      }
+      sendMessage(value) {
+        this.output.value += `${value}\n`;
+        this.output.c.render();
 
-				this.queue.push(value);
-				if(this.sendInterval === null && this.s.readyState)
-					this.sendInterval = window.setInterval(this.sendQueued.bind(this), 50); // latency spikes at approximately 1000 messages for no reason even with this
-			}
-			sendQueued(){
-				var value = this.queue.pop(0);
-				if(value)
-					this.s.send(value)
-				else
-					window.clearInterval(this.sendInterval);
-			}
-			atmessage(ev){
-				console.log(ev.data);
-				this.output.value += ev.data;
-				this.output.c.render();
-			}
-			aterror(ev){
-				console.log(ev);
-			}
-		}
-		App.socketEvents = getEvents(App, 'at');
-		defineComponent('app', App);
-	</script>
+        this.queue.push(value);
+        if (this.sendInterval === null && this.s.readyState)
+          this.sendInterval = window.setInterval(this.sendQueued.bind(this), 50); // latency spikes at approximately 1000 messages for no reason even with this
+      }
+      sendQueued() {
+        var value = this.queue.pop(0);
+        if (value) this.s.send(value);
+        else window.clearInterval(this.sendInterval);
+      }
+      atmessage(ev) {
+        console.log(ev.data);
+        this.output.value += ev.data;
+        this.output.c.render();
+      }
+      aterror(ev) {
+        console.log(ev);
+      }
+    }
+    App.socketEvents = getEvents(App, 'at');
+    defineComponent('app', App);
+  </script>
 </head>
 <body id="body">
-	<app>
-		<stack>
-			<div blur nopadding>
-				<output whitespace></output>
-				<input w="0.1" type="text" msg placeholder="Send a message!"/>
-			</div>
-			<div padding>
-				<output>Connecting<br>to server</output>
-			</div>
-		</stack>
-	</app>
+  <app>
+    <stack>
+      <div blur nopadding>
+        <output whitespace></output>
+        <input w="0.1" type="text" msg placeholder="Send a message!" />
+      </div>
+      <div padding>
+        <output>Connecting<br />to server</output>
+      </div>
+    </stack>
+  </app>
 </body>

@@ -21,32 +21,6 @@ class Database
     $this->conn->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_NAMED);
   }
 
-  function UUID_exists($UUID): bool
-  {
-    $stmt = $this->conn->prepare("SELECT uuid FROM `routing` WHERE uuid = :uuid");
-    $stmt->execute([
-      ":uuid" => $UUID,
-    ]);
-    return $stmt->fetch() !== false;
-  }
-
-  function new_UUID(): int
-  {
-    // paranoid UUID generation
-    do {
-      $stmt = $this->conn->query("SELECT UUID_SHORT()");
-      $UUID = $stmt->fetch()["UUID_SHORT()"];
-    } while ($this->UUID_exists($UUID));
-    return $UUID;
-  }
-  function username_exists($username): bool
-  {
-    $stmt = $this->conn->prepare("SELECT `username` FROM `users` WHERE `username` = :username");
-    $stmt->execute([
-      ":username" => $username,
-    ]);
-    return $stmt->fetch() !== false;
-  }
   function register(?int $UUID, array $query): string
   {
     if ($UUID === null) $UUID = $this->new_UUID();
@@ -68,6 +42,31 @@ class Database
       ]);
     }
     return $users ? '1' : '';
+  }
+  function new_UUID(): int
+  {
+    // paranoid UUID generation
+    do {
+      $stmt = $this->conn->query("SELECT UUID_SHORT()");
+      $UUID = $stmt->fetch()["UUID_SHORT()"];
+    } while ($this->UUID_exists($UUID));
+    return $UUID;
+  }
+  function UUID_exists($UUID): bool
+  {
+    $stmt = $this->conn->prepare("SELECT `uuid` FROM `routing` WHERE `uuid` = :uuid");
+    $stmt->execute([
+      ":uuid" => $UUID,
+    ]);
+    return $stmt->fetch() !== false;
+  }
+  function username_exists($username): bool
+  {
+    $stmt = $this->conn->prepare("SELECT `username` FROM `users` WHERE `username` = :username");
+    $stmt->execute([
+      ":username" => $username,
+    ]);
+    return $stmt->fetch() !== false;
   }
 
   function login(array $query): string
@@ -92,9 +91,9 @@ class Database
   function create_session(array $query, ?int $expire = null)
   {
     if ($expire === null)
-      $expire = time() + 30 * 86400;
+      $expire = time() + 30 * 86400; // TODO: avoid the year 2038 problem
 
-    $token = base64_encode(\utils\random_bytes(32)); // guarantee token doesn't include &
+    $token = $this->new_token();
 
     $stmt = $this->conn->prepare("SELECT `uuid` FROM `users` WHERE `username` = :username");
     $stmt->execute([
@@ -109,10 +108,32 @@ class Database
       ":uuid" => $UUID,
     ]);
 
-    return "SESSION=uuid=$UUID&token=$token; expires=never; path=/";
+    return "SESSION=$token; expires=never; path=/; SameSite=Lax; Secure=0"; // expire handled by server, TODO: implement https
+  }
+  function new_token(): string
+  {
+    // ensure token is unique
+    do {
+      $token = base64_encode(\utils\random_bytes(32)); // guarantee token doesn't include &
+    } while ($this->token_exists($token));
+    return $token;
+  }
+  function token_exists($token): bool
+  {
+    $stmt = $this->conn->prepare("SELECT `token` FROM `sessions` WHERE `token` = :token");
+    $stmt->execute([
+      ":token" => $token,
+    ]);
+    return $stmt->fetch() !== false;
   }
 
-  function loadSession()
+  function load_session($token)
   {
+    if ($token === null) return false; // fast path
+
+    $stmt = $this->conn->prepare("SELECT * FROM `sessions` WHERE `token` = :token");
+    $stmt->execute([":token" => $token]);
+    $session = $stmt->fetch();
+    return $session;
   }
 }

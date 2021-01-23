@@ -64,8 +64,8 @@
                     //password2: this.password1.value, // redundant
                   }),
                 }).then((x) => {
-                  document.cookie = x;
-                  // TODO: redirect
+                  setCookie(x);
+                  redirect(`${window.location.origin}/`);
                 });
               break;
           }

@@ -136,7 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
 Component_ = Component;
 Component = class Component extends Component_ {
   load(){
-    if(this.e.hasAttribute('disabled')) this.e.style.opacity = 0;
+    if(this.e.localName && this.e.hasAttribute('disabled')) this.e.style.opacity = 0;
     this.disabledAnimation = null;
   }
   set disabled(value) {

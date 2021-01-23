@@ -30,6 +30,17 @@ class App extends websocket\Server
     ]);
     parent::__construct(...$args);
   }
+  function load_session($headers)
+  {
+    if (isset($headers["Cookie"][0])) {
+      $cookie = http\parseCookie($headers["Cookie"][0]);
+      $session = $this->database->load_session($cookie["SESSION"]);
+    } else {
+      $cookie = [];
+      $session = false;
+    }
+    return [$cookie, $session];
+  }
 
   function httpResponse(int $i)
   {
@@ -41,9 +52,11 @@ class App extends websocket\Server
       "headers" => $headers,
       "body" => $body,
     ] = http\parseRequest($conn->request);
+    $host = $headers["Host"][0] ?? $headers["Origin"][0] ?? $headers["Referer"] ?? null;
     $path = $url["path"];
 
     $responseHeaders = [];
+    $responseHeaders["Content-Type"] = "text/html; charset=UTF-8";
 
     switch ($method) {
       case "GET":
@@ -57,31 +70,31 @@ class App extends websocket\Server
     if (preg_match('/\.{2}/', $path))
       return http\createResponse(http\FORBIDDEN, $responseHeaders);
 
-    if (isset($headers["Cookie"][0])) {
-      $cookie = http\parseCookie($headers["Cookie"][0]);
-      if (isset($cookie["SESSION"])) {
-        $stmt = $this->pdo->prepare("SELECT * FROM `sessions` WHERE token = :token LIMIT 1");
-        $stmt->execute([":token" => $cookie["SESSION"]]);
-        var_dump($stmt->fetch());
-        // TODO: load session from database
-      }
-      // Secure HttpOnly SameSite
-    }
+    $cookie = isset($headers["Cookie"][0])
+      ? http\parseCookie($headers["Cookie"][0])
+      : [];
 
     switch ($path) {
       case "./":
-        if (true || isset($_SESSION))
+        $session = $this->database->load_session($cookie["SESSION"] ?? null);
+        if ($session !== false)
           $response = http\createResponse(http\OK, $responseHeaders, file_get_contents("client/index.html"));
         else {
-          $responseHeaders["Location"] = $headers["Origin"][0] . "/login";
-          $response = http\createResponse(\http\TEMPORARYREDIRECT, $responseHeaders);
+          $responseHeaders["Location"] = "http://$host/login";
+          $response = http\createResponse(\http\SEEOTHER, $responseHeaders);
         }
         break;
       case "./login":
       case "./login/":
         switch ($method) {
           case "GET":
-            $response = http\createResponse(http\OK, $responseHeaders, file_get_contents("client/login.html"));
+            $session = $this->database->load_session($cookie["SESSION"] ?? null);
+            if ($session !== false) {
+              $responseHeaders["Location"] = "http://$host/";
+              $response = http\createResponse(\http\SEEOTHER, $responseHeaders);
+            } else {
+              $response = http\createResponse(http\OK, $responseHeaders, file_get_contents("client/login.html"));
+            }
             break;
           case "POST":
             var_dump($body);
@@ -112,19 +125,20 @@ class App extends websocket\Server
                 );
                 break;
             }
-            if (!isset($response)) {
-              $responseHeaders["Location"] = $headers["Origin"][0] . "/login";
-              $response = http\createResponse(\http\SEEOTHER, $responseHeaders); // forces GET
-              break;
-            }
         }
         if (!isset($response)) $response = \http\createResponse(\http\BADREQUEST);
         break;
       default:
         chdir('./client');
         if (file_exists($path) && !preg_match('/\.html$/', $path)) {
-          if (preg_match('/\.css$/', $path))
-            $responseHeaders["Content-Type"] = "text/css";
+          switch (pathinfo($path, PATHINFO_EXTENSION)) {
+            case 'css':
+              $responseHeaders["Content-Type"] = "text/css";
+              break;
+            case 'js':
+              $responseHeaders["Content-Type"] = "text/javascript";
+              break;
+          }
           $response = http\createResponse(http\OK, $responseHeaders, file_get_contents($path));
         } else
           $response = http\createResponse(http\NOTFOUND, $responseHeaders);

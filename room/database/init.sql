@@ -22,8 +22,13 @@ CREATE TABLE IF NOT EXISTS `users` ( # table=1
 );
 
 CREATE TABLE IF NOT EXISTS `sessions` ( # table=2
-  `token` BINARY(32) NOT NULL,
-  `expire` TIMESTAMP NOT NULL,
-  `uuid` BINARY(16) NOT NULL,
+  `token` VARCHAR(255) NOT NULL,
+  `expire` BIGINT NOT NULL,
+  `uuid` BIGINT NOT NULL,
   PRIMARY KEY (`token`)
+);
+
+CREATE TABLE IF NOT EXISTS `channels` ( # table=3
+  `uuid` BIGINT NOT NULL,
+  PRIMARY KEY (`uuid`)
 );
