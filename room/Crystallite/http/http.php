@@ -104,7 +104,7 @@ function createResponse($status = 200, $headers = [], $body = "")
     $result .= "\r\n$h: $v";
 
   //return "$result\r\n\r\n" . (strlen($body) > 0 ? "$body\r\n\r\n" : "");
-  return "$result\r\n\r\n$body"; // technically wrong, but easier to work with
+  return "$result\r\n\r\n$body"; // technically wrong?, but easier to work with
 }
 
 // TODO: implement parseResponse()
@@ -114,7 +114,6 @@ function createResponse($status = 200, $headers = [], $body = "")
 
 function parseCookie(string $cookie)
 {
-  var_dump($cookie);
   $result = [];
   foreach (explode(";", $cookie) as $kv) {
     preg_match('/(.+?)=(.*)/', trim($kv), $match);

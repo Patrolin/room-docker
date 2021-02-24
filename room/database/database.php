@@ -108,7 +108,7 @@ class Database
       ":uuid" => $UUID,
     ]);
 
-    return "SESSION=$token; expires=never; path=/; SameSite=Lax; Secure=0"; // expire handled by server, TODO: implement https
+    return "SESSION=$token; expires=never; path=/; SameSite=Lax"; // expire handled by server, TODO: implement https
   }
   function new_token(): string
   {

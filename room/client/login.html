@@ -9,6 +9,7 @@
     }
   </style>
   <script>
+    deleteCookie('SESSION');
     class App extends Component {
       load() {
         super.load();
@@ -64,8 +65,12 @@
                     //password2: this.password1.value, // redundant
                   }),
                 }).then((x) => {
-                  setCookie(x);
-                  redirect(`${window.location.origin}/`);
+                  if (x) {
+                    console.log(x);
+                    setCookie(x);
+                    console.log(document.cookie);
+                    redirect(`${window.location.origin}/`);
+                  }
                 });
               break;
           }
