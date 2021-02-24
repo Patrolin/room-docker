@@ -47,6 +47,16 @@ function padLeft(n){
   //res.push(0);
   return res;
 }
+// Scrolling
+function getScroll(e){
+  return e.scrollTop;
+}
+function setScroll(e, x){
+  e.scrollTop = x;
+}
+function getScrollMax(e){
+  return e.scrollHeight - e.clientHeight;
+}
 
 
 // Components
@@ -83,6 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
     html, body {
       width: 100%;
       height: 100%;
+      overflow-x: hidden;
     }
   `);
   style.sheet.insertRule(`
@@ -114,10 +125,10 @@ document.addEventListener('DOMContentLoaded', () => {
   fitText = function fitText(e, size, contentSize=undefined) {
     if (contentSize == undefined) contentSize = size;
     var text = e.getAttribute('dvalue')
-    || e.value
-    || e.textContent
-    || e.placeholder
-    || '0';
+      || e.value
+      || e.textContent
+      || e.placeholder
+      || '0';
 
     var style = getComputedStyle(e);
     ctx.font = `1px ${style.fontFamily}`;
@@ -210,61 +221,83 @@ Component = class Component extends Component_ {
     fitText(this.e, size, contentSize);
   }
   renderColumn(children, size, contentSize=undefined){
-    var cHeight = this.e.getAttribute('cHeight');
-    if(contentSize == undefined) contentSize = { ...size, top: 0, left: 0 };
-    var { top, left, width, height } = contentSize;
-    var { weights, W } = this.getRenderWeights(children);
-    var contentHeightUnit = height/W;
+    if(contentSize) contentSize = { ...size, top: 0, left: 0 };
+    var heights = this.getRenderLine(children, contentSize.height, 'height', this.e.getAttribute('cHeight'));
+
     var paddingWidth = size.width-contentSize.width;
     var paddingHeight = size.height-contentSize.height;
-    var paddings = this.getRenderPaddings(children.length, this.getRenderPad());
-    left += 0.5*paddingWidth;
+    var paddings = this.getRenderPaddings(children.length);
+
+    var reverse = this.e.hasAttribute('reverse');
+    var top = 0;
+    var left = 0.5*paddingWidth;
+    var width = contentSize.width;
+    var height;
     for(var i = 0; i < children.length; ++i){
       top += paddings[i]*paddingHeight;
-      height = cHeight === null ? weights[i]*contentHeightUnit : +cHeight;
-      children[i].c.renderChild({ top, left, width, height });
+      height = heights[i];
+      children[i].c.renderChild({ top, left, width, height }, { bottom: reverse, right: false });
       top += height;
     }
   }
   renderRow(children, size, contentSize=undefined){
     if(contentSize) contentSize = { ...size, top: 0, left: 0 };
-    var { top, left, width, height } = contentSize;
-    var { weights, W } = this.getRenderWeights(children);
-    var contentWidthUnit = width/W;
+    var widths = this.getRenderLine(children, contentSize.width, 'width', this.e.getAttribute('cWidth'));
+
     var paddingWidth = size.width-contentSize.width;
     var paddingHeight = size.height-contentSize.height;
-    var paddings = this.getRenderPaddings(children.length, this.getRenderPad());
-    top += 0.5*paddingHeight;
+    var paddings = this.getRenderPaddings(children.length);
+
+    var reverse = this.e.hasAttribute('reverse');
+    var top = 0.5*paddingHeight;
+    var left = 0;
+    var width;
+    var height = contentSize.height;
     for(var i = 0; i < children.length; ++i){
       left += paddings[i]*paddingWidth;
-      width = weights[i]*contentWidthUnit;
-      children[i].c.renderChild({ top, left, width, height });
+      width = widths[i];
+      children[i].c.renderChild({ top, left, width, height }, { bottom: false, right: reverse });
       left += width;
     }
   }
   renderStack(children, size, contentSize){
     if(contentSize) contentSize = { ...size, top: 0, left: 0 };
-    var { top, left, width, height } = contentSize;
+
     var paddingWidth = size.width-contentSize.width;
     var paddingHeight = size.height-contentSize.height;
-    top += 0.5*paddingHeight;
-    left += 0.5*paddingWidth;
+
+    var top = 0.5*paddingHeight;
+    var left = 0.5*paddingWidth;
+    var width = contentSize.width;
+    var height = contentSize.height;
     for(var f of children)
       f.c.renderChild({ top, left, width, height });
   }
 
-  getRenderWeights(children){
-    var weights = [...children].map((c) => +(c.getAttribute('w') || 1));
-    return {
-      weights,
-      W: weights.reduce((a, b) => a + b, 0)
-    };
+  getRenderLine(children, contentMain, attribute, cMain){
+    if(cMain !== null)
+      return children.map(x => +cMain);
+
+    var F = 0;
+    var mains = [];
+    var rigidContentMain = 0;
+    for(var e of children){
+      var currMain = e.getAttribute(attribute);
+      if(currMain === null){
+        var f = +e.getAttribute('f') || 1;
+        F -= f;
+        currMain = -f;
+      } else{
+        currMain = +currMain;
+        rigidContentMain += currMain;
+      }
+      mains.push(currMain);
+    }
+    var flexContentMain = contentMain - rigidContentMain;
+    return mains.map(currMain => currMain >= 0 ? currMain : currMain/F * flexContentMain);
   }
-  getRenderPad(){
-    return this.e.getAttribute('pad') || 'evenly';
-  }
-  getRenderPaddings(n, pad){
-    switch(pad){
+  getRenderPaddings(n){
+    switch(this.e.getAttribute('pad') || 'evenly'){
       case 'right':
         return padRight(n);
       case 'between':
@@ -281,17 +314,23 @@ Component = class Component extends Component_ {
         throw new TypeError(`pad expected type ("right" | "between" | "around" | "evenly" | "outside" | "left"), found ${qDescribe(pad)}`);
     }
   }
-  renderChild(size) {
+  renderChild(size, options = { bottom: false, right: false }) {
     var { top, left, width, height } = size;
-    //console.log(this.e, size);
+    var { bottom, right } = options;
+
     setStyle(this.e, {
       position: 'absolute',
-      top: `${top * window.devicePixelRatio}px`,
-      left: `${left * window.devicePixelRatio}px`,
+      top: '',
+      left: '',
+      bottom: '',
+      right: '',
+      [bottom ? 'bottom' : 'top']: `${top * window.devicePixelRatio}px`,
+      [right ? 'right' : 'left']: `${left * window.devicePixelRatio}px`,
       width: `${width * window.devicePixelRatio}px`,
       height: `${height * window.devicePixelRatio}px`,
       borderRadius: `${this.getRenderBorderRadius() * width * window.devicePixelRatio}px`,
     });
+
     this.size = size;
     this.render();
   }

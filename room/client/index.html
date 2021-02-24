@@ -40,8 +40,8 @@
         this.sendInterval = null;
 
         [this.content, this.overlay] = this.e.q(/stack/).children;
-        this.output = this.e.q(/output/);
-        this.input = this.e.q(/input/);
+        this.output = this.e.q(/.output/);
+        this.input = this.e.q(/input[msg]/);
 
         this.overlayOutput = this.overlay.q(/output/);
       }
@@ -54,6 +54,7 @@
         this.content.setAttribute('blur', '');
         this.overlay.removeAttribute('disabled');
         this.overlayOutput.value = 'Connection lost';
+        this.overlay.parentNode.c.render();
         setTimeout(this.initSocket.bind(this), 5000);
       }
 
@@ -64,12 +65,21 @@
         }
       }
       sendMessage(value) {
+        this.drawMessage(value);
         this.output.value += `${value}\n`;
         this.output.c.render();
 
         this.queue.push(value);
         if (this.sendInterval === null && this.s.readyState)
           this.sendInterval = window.setInterval(this.sendQueued.bind(this), 50); // latency spikes at approximately 1000 messages for no reason even with this
+      }
+      drawMessage(value) {
+        if (value) {
+          var e = q(value);
+          if (e instanceof Text) e = q(`<text>${value}</text>`);
+          this.output.append(e);
+          pactInit(e);
+        }
       }
       sendQueued() {
         var value = this.queue.pop(0);
@@ -78,7 +88,7 @@
       }
       atmessage(ev) {
         console.log(ev.data);
-        this.output.value += ev.data;
+        for (var line of ev.data.split('\n')) this.drawMessage(line);
         this.output.c.render();
       }
       aterror(ev) {
@@ -93,27 +103,14 @@
   <app>
     <stack>
       <row blur>
-        <div w="0.1" cHeight="64">
-          <div>hello</div>
-          <div>hello</div>
-          <div>hello</div>
-          <div>hello</div>
-          <div>hello</div>
-          <div>hello</div>
-          <div>hello</div>
-          <div>hello</div>
-          <div>hello</div>
-          <div>hello</div>
-          <div>hello</div>
-          <div>hello</div>
-          <div>hello</div>
-          <div>hello</div>
-          <div>hello</div>
-          <div>hello</div>
+        <div f="0.1" width="64" cHeight="64" nopadding>
+          <text>A</text>
+          <text>B</text>
+          <text>C</text>
         </div>
         <div nopadding>
-          <output whitespace></output>
-          <input w="0.1" type="text" msg placeholder="Send a message!" />
+          <div reverse cHeight="32" class="output"></div>
+          <input f="0.1" type="text" msg placeholder="Send a message!" />
         </div>
       </row>
       <div padding>

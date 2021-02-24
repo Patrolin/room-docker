@@ -66,9 +66,7 @@
                   }),
                 }).then((x) => {
                   if (x) {
-                    console.log(x);
                     setCookie(x);
-                    console.log(document.cookie);
                     redirect(`${window.location.origin}/`);
                   }
                 });
@@ -139,11 +137,11 @@
         </label>
       </row>
       <row>
-        <text w="0.5">Username:</text>
+        <text f="0.5">Username:</text>
         <input required name="username" type="text" autocomplete="username" autofocus />
       </row>
       <row>
-        <text w="0.5" dvalue="Username:">Password:</text>
+        <text f="0.5" dvalue="Username:">Password:</text>
         <input
           required
           name="password1"
@@ -152,7 +150,7 @@
         />
       </row>
       <row disabled id="password2">
-        <text disabled w="0.5" dvalue="Username:">Password:</text>
+        <text disabled f="0.5" dvalue="Username:">Password:</text>
         <input disabled name="password2" type="password" autocomplete="off" />
       </row>
       <row>
