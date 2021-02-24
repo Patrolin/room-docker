@@ -76,9 +76,10 @@
       drawMessage(value) {
         if (value) {
           var e = q(value);
-          if (e instanceof Text) e = q(`<text>${value}</text>`);
-          this.output.append(e);
-          pactInit(e);
+          var d = e.constructor === Text ? q('<text>') : q('<p>');
+          d.q(e);
+          this.output.append(d);
+          pactInit(d);
         }
       }
       sendQueued() {

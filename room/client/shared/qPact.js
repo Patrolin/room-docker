@@ -17,11 +17,10 @@ function q(input) {
       return children.length > 1 ? [...children] : children[0];
     case Array:
       return input.map((e) => q(e));
-    case Node:
-      return input;
     case RegExp:
       return document.q(input);
     default:
+      if(input instanceof Node) return input;
       throw TypeError(
         `input expected type (RegExp | string | Node | Array | null), found ${
           qDescribe(input)
@@ -45,13 +44,11 @@ Node.prototype.q = function (input) {
         : this.querySelector(input.source);
     default:
       var x = q(input);
-      switch(x.constructor){
-        case Node:
-          this.appendChild(x);
-        case Array:
-          for(var e of x)
-            this.appendChild(e);
-      }
+      if(x instanceof Node)
+        this.appendChild(x);
+      else if(x.constructor === Array)
+        for(var e of x)
+          this.appendChild(e);
       return x;
   }
 };

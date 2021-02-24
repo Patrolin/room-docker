@@ -102,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   `);
   style.sheet.insertRule(`
-    b, em, i, s, text, input, output {
+    b, em, i, s, text, p, input, output {
       display: inline-flex;
       justify-content: center;
       align-items: center;
@@ -328,7 +328,7 @@ Component = class Component extends Component_ {
       [right ? 'right' : 'left']: `${left * window.devicePixelRatio}px`,
       width: `${width * window.devicePixelRatio}px`,
       height: `${height * window.devicePixelRatio}px`,
-      borderRadius: `${this.getRenderBorderRadius() * width * window.devicePixelRatio}px`,
+      outline: `${this.getRenderBorderRadius() * width * window.devicePixelRatio}px`,
     });
 
     this.size = size;
