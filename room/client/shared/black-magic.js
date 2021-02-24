@@ -86,6 +86,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   `);
   style.sheet.insertRule(`
+    [cHeight] {
+      overflow: hidden auto;
+    }
+  `);
+  style.sheet.insertRule(`
     b, text, input, output {
       display: inline-flex;
       justify-content: center;
