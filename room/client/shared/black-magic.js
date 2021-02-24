@@ -205,6 +205,7 @@ Component = class Component extends Component_ {
     fitText(this.e, size, contentSize);
   }
   renderColumn(children, size, contentSize=undefined){
+    var cHeight = this.e.getAttribute('cHeight');
     if(contentSize == undefined) contentSize = { ...size, top: 0, left: 0 };
     var { top, left, width, height } = contentSize;
     var { weights, W } = this.getRenderWeights(children);
@@ -215,7 +216,7 @@ Component = class Component extends Component_ {
     left += 0.5*paddingWidth;
     for(var i = 0; i < children.length; ++i){
       top += paddings[i]*paddingHeight;
-      height = weights[i]*contentHeightUnit;
+      height = cHeight === null ? weights[i]*contentHeightUnit : +cHeight;
       children[i].c.renderChild({ top, left, width, height });
       top += height;
     }

@@ -39,7 +39,7 @@
         this.queue = [];
         this.sendInterval = null;
 
-        [this.content, this.overlay] = this.e.q(/stack div/g);
+        [this.content, this.overlay] = this.e.q(/stack/).children;
         this.output = this.e.q(/output/);
         this.input = this.e.q(/input/);
 
@@ -92,10 +92,20 @@
 <body id="body">
   <app>
     <stack>
-      <div blur nopadding>
-        <output whitespace></output>
-        <input w="0.1" type="text" msg placeholder="Send a message!" />
-      </div>
+      <row blur>
+        <div w="0.1" cHeight="64">
+          <div>hello</div>
+          <div>hello</div>
+          <div>hello</div>
+          <div>hello</div>
+          <div>hello</div>
+          <div>hello</div>
+        </div>
+        <div nopadding>
+          <output whitespace></output>
+          <input w="0.1" type="text" msg placeholder="Send a message!" />
+        </div>
+      </row>
       <div padding>
         <output>Connecting<br />to server</output>
       </div>
