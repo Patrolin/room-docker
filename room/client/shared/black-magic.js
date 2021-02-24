@@ -102,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   `);
   style.sheet.insertRule(`
-    b, text, input, output {
+    b, em, i, s, text, input, output {
       display: inline-flex;
       justify-content: center;
       align-items: center;
