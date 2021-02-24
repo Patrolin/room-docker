@@ -16,11 +16,41 @@
   </style>
   <script>
     class MessageInputComponent extends InputComponent {
+      load() {
+        this.history = [''];
+        this.historyIndex = 0;
+      }
       oninput(ev) {
         this.render();
       }
       onkeydown(ev) {
-        if (ev.key === 'Enter' && this.e.value) this.alter();
+        switch (ev.key) {
+          case 'Enter':
+            if (this.e.value) {
+              this.history[this.history.length - 1] = this.e.value;
+              this.historyIndex = this.history.length;
+              this.history.push('');
+              this.alter();
+            }
+            break;
+          case 'ArrowUp':
+            ev.preventDefault();
+            var prevHistoryIndex = this.historyIndex;
+            if (prevHistoryIndex === this.history.length - 1)
+              this.history[this.history.length - 1] = this.e.value;
+            this.historyIndex = Math.max(0, this.historyIndex - 1);
+            if (this.historyIndex !== prevHistoryIndex) {
+              this.e.value = this.history[this.historyIndex];
+            }
+            break;
+          case 'ArrowDown':
+            ev.preventDefault();
+            var prevHistoryIndex = this.historyIndex;
+            this.historyIndex = Math.min(this.historyIndex + 1, this.history.length - 1);
+            if (this.historyIndex !== prevHistoryIndex)
+              this.e.value = this.history[this.historyIndex];
+            break;
+        }
       }
       clearMessage() {
         this.e.value = '';
@@ -76,16 +106,19 @@
       drawMessage(value) {
         if (value) {
           var e = q(value);
-          var d = e.constructor === Text ? q('<text>') : q('<p>');
+          var d = e.constructor === Text ? q('<text height="32">') : q('<p>');
           d.q(e);
-          this.output.append(d);
+          this.output.prepend(d);
           pactInit(d);
         }
       }
       sendQueued() {
         var value = this.queue.pop(0);
         if (value) this.s.send(value);
-        else window.clearInterval(this.sendInterval);
+        else {
+          window.clearInterval(this.sendInterval);
+          this.sendInterval = null;
+        }
       }
       atmessage(ev) {
         console.log(ev.data);
@@ -110,7 +143,7 @@
           <text>C</text>
         </div>
         <div nopadding>
-          <div reverse cHeight="32" class="output"></div>
+          <div reverse class="output"></div>
           <input f="0.1" type="text" msg placeholder="Send a message!" />
         </div>
       </row>

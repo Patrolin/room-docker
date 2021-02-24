@@ -10,7 +10,7 @@ include_once "Crystallite/websocket/websocket.php";
 use database\Database;
 
 define('debug\MAIN', debug\nextLevel());
-debug\setLevel(debug\NONE);
+debug\setLevel(debug\WEBSOCKETS);
 
 define('ROOT', getcwd());
 
