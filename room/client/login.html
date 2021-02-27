@@ -9,7 +9,6 @@
     }
   </style>
   <script>
-    deleteCookie('SESSION');
     class App extends Component {
       load() {
         super.load();
@@ -68,6 +67,11 @@
                   if (x) {
                     setCookie(x);
                     redirect(`${window.location.origin}/`);
+                  } else {
+                    if (login === 'Login') {
+                      this.password1.c.validity = 'Invalid Password';
+                      this.password1.reportValidity();
+                    }
                   }
                 });
               break;
@@ -128,11 +132,11 @@
     <form br="0.02" method="POST" action="javascript:void(0);">
       <row id="login">
         <label for="login-Login">
-          <input name="login" type="radio" value="Login" checked />
+          <input id="login-Login" name="login" type="radio" value="Login" checked />
           <text dvalue="Register">Login</text>
         </label>
         <label for="login-Register">
-          <input name="login" type="radio" value="Register" />
+          <input id="login-Register" name="login" type="radio" value="Register" />
           <text>Register</text>
         </label>
       </row>

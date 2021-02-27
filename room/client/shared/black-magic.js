@@ -47,16 +47,6 @@ function padLeft(n){
   //res.push(0);
   return res;
 }
-// Scrolling
-function getScroll(e){
-  return e.scrollTop;
-}
-function setScroll(e, x){
-  e.scrollTop = x;
-}
-function getScrollMax(e){
-  return e.scrollHeight - e.clientHeight;
-}
 
 
 // Components
@@ -82,17 +72,29 @@ document.addEventListener('DOMContentLoaded', () => {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+      border: none;
+      outline: 1px solid;
       max-width: 100%;
-      /*max-height: 100%;*/
       font-family: Helvetica, sans-serif;
       transition: opacity 0s;
       /*transition: top, left, width, height .5s ease-in-out;*/ /* chrome doesn't want to animate top, left */
     }
   `);
   style.sheet.insertRule(`
+    ::placeholder {
+      color: #bbbbbb;
+    }
+  `);
+  style.sheet.insertRule(`
+    :focus::placeholder {
+      color: #dddddd;
+    }
+  `);
+  style.sheet.insertRule(`
     html, body {
       width: 100%;
       height: 100%;
+      background: #eeeeee;
       overflow-x: hidden;
     }
   `);
@@ -102,11 +104,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   `);
   style.sheet.insertRule(`
+    b, em, i, s, text, p, input[type="text"], input[type="password"], output, label {
+      background: #eeeeee;
+    }
+  `)
+  style.sheet.insertRule(`
     b, em, i, s, text, p, input, output {
       display: inline-flex;
       justify-content: center;
       align-items: center;
       text-align: center; /* input is dumb */
+      outline: none;
+    }
+  `);
+  style.sheet.insertRule(`
+  input[type="text"], input[type="password"] {
+      outline: 1px solid;
     }
   `);
   style.sheet.insertRule(`
@@ -126,22 +139,23 @@ document.addEventListener('DOMContentLoaded', () => {
     if (contentSize == undefined) contentSize = size;
     var text = e.getAttribute('dvalue')
       || e.value
-      || e.textContent
+      || e.c.textContent
       || e.placeholder
       || '0';
 
     var style = getComputedStyle(e);
     ctx.font = `1px ${style.fontFamily}`;
-    var m = ctx.measureText(text);
-    var width = Math.max(m.width, m.actualBoundingBoxRight - m.actualBoundingBoxLeft); // what the fuck?
-    var lines = text.split('\n').length + e.q(/br/g).length;
+    var lines = text.split('\n');
+    var width = Math.max(...lines.map(line => {
+      var m = ctx.measureText(line);
+      return 1.8 + Math.max(m.width, m.actualBoundingBoxRight - m.actualBoundingBoxLeft); // what the fuck?
+    }));
 
-    // TODO: support multiple lines
     var maxHeightSize = contentSize.height;
     var maxWidthSize = contentSize.width / width;
     setStyle(e, {
       fontSize: `${Math.min(maxHeightSize, maxWidthSize) * devicePixelRatio}px`,
-      lineHeight: `${size.height / lines * devicePixelRatio}px`,
+      lineHeight: `${size.height / lines.length * devicePixelRatio}px`,
     });
   };
 
@@ -155,6 +169,34 @@ Component = class Component extends Component_ {
     if(this.e.localName && this.e.hasAttribute('disabled')) this.e.style.opacity = 0;
     this.disabledAnimation = null;
   }
+  get textContent(){
+    var res = '';
+    if(this.e.textContent){
+      for(var d of this.e.childNodes){
+        switch(d.constructor){
+          case Text:
+            res += d.textContent;
+            break;
+          case HTMLBRElement:
+            res += '\n';
+            break;
+          default:
+            res += d.c.textContent;
+            break;
+        }
+      }
+    };
+    return res;
+  }
+  get scroll(){
+    return this.e.scrollTop;
+  }
+  set scroll(x){
+    this.e.scrollTop = x;
+  }
+  get scrollMax(){
+    return this.e.scrollHeight - this.e.clientHeight;
+  }
   set disabled(value) {
     super.disabled = value;
     if(this.disabledAnimation !== null) {
@@ -166,7 +208,7 @@ Component = class Component extends Component_ {
     else
       this.disabledAnimation = [
         setInterval(function(){
-          const DURATION = 0.5;
+          const DURATION = 1/Math.E;
           var d = new Date;
           var t = (d-this.disabledAnimation[1]) / 1000;
           if(t < DURATION){
@@ -221,20 +263,22 @@ Component = class Component extends Component_ {
     fitText(this.e, size, contentSize);
   }
   renderColumn(children, size, contentSize=undefined){
-    if(contentSize) contentSize = { ...size, top: 0, left: 0 };
-    var heights = this.getRenderLine(children, contentSize.height, 'height', this.e.getAttribute('cHeight'));
+    if(contentSize === undefined) contentSize = { ...size, top: 0, left: 0 };
+    var cHeight = this.e.getAttribute('cHeight');
+    var heights = this.getRenderLine(children, contentSize.height, 'height', cHeight);
 
     var paddingWidth = size.width-contentSize.width;
     var paddingHeight = size.height-contentSize.height;
     var paddings = this.getRenderPaddings(children.length);
 
-    var reverse = this.e.hasAttribute('reverse');
+    var reverse = this.e.hasAttribute('reverse'); // TODO: browsers are dumb and don't know how to make a scrollbar
     var top = 0;
     var left = 0.5*paddingWidth;
     var width = contentSize.width;
     var height;
     for(var i = 0; i < children.length; ++i){
-      top += paddings[i]*paddingHeight;
+      if(cHeight === null)
+        top += paddings[i]*paddingHeight;
       height = heights[i];
       children[i].c.renderChild({ top, left, width, height }, { bottom: reverse, right: false });
       top += height;
@@ -242,7 +286,8 @@ Component = class Component extends Component_ {
   }
   renderRow(children, size, contentSize=undefined){
     if(contentSize) contentSize = { ...size, top: 0, left: 0 };
-    var widths = this.getRenderLine(children, contentSize.width, 'width', this.e.getAttribute('cWidth'));
+    var cWidth = this.e.getAttribute('cWidth');
+    var widths = this.getRenderLine(children, contentSize.width, 'width', cWidth);
 
     var paddingWidth = size.width-contentSize.width;
     var paddingHeight = size.height-contentSize.height;
@@ -254,7 +299,8 @@ Component = class Component extends Component_ {
     var width;
     var height = contentSize.height;
     for(var i = 0; i < children.length; ++i){
-      left += paddings[i]*paddingWidth;
+      if(cWidth === null)
+        left += paddings[i]*paddingWidth;
       width = widths[i];
       children[i].c.renderChild({ top, left, width, height }, { bottom: false, right: reverse });
       left += width;
@@ -328,7 +374,7 @@ Component = class Component extends Component_ {
       [right ? 'right' : 'left']: `${left * window.devicePixelRatio}px`,
       width: `${width * window.devicePixelRatio}px`,
       height: `${height * window.devicePixelRatio}px`,
-      outline: `${this.getRenderBorderRadius() * width * window.devicePixelRatio}px`,
+      outlineRadius: `${this.getRenderBorderRadius() * width * window.devicePixelRatio}px`,
     });
 
     this.size = size;

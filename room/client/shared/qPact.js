@@ -1,4 +1,4 @@
-const QPACT_VERSION = 'D2';
+const QPACT_VERSION = 'D3';
 function qDescribe(input) {
   return `${
     input != undefined ? `<${input.constructor.name}>` : ''
@@ -12,6 +12,7 @@ function q(input) {
   switch(input.constructor){
     case String:
       var template = document.createElement('template');
+      if(!input) return template.content;
       template.innerHTML = input;
       var children = template.content.childNodes;
       return children.length > 1 ? [...children] : children[0];

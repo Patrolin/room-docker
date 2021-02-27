@@ -4,21 +4,21 @@ SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "+01:00";
 
 
-CREATE DATABASE IF NOT EXISTS `room`;
+CREATE DATABASE IF NOT EXISTS `room` CHARACTER SET utf8 COLLATE utf8_bin;
 USE `room`;
 
-CREATE TABLE IF NOT EXISTS `routing` ( # table=0
+CREATE TABLE IF NOT EXISTS `channels` ( # table=0
   `uuid` BIGINT NOT NULL, # u64
   `table` TINYINT NOT NULL, # u8
-  PRIMARY KEY (`uuid`)
+  `name` VARCHAR(255) NOT NULL,
+  PRIMARY KEY (`uuid`),
+  UNIQUE (`name`)
 );
 
 CREATE TABLE IF NOT EXISTS `users` ( # table=1
   `uuid` BIGINT NOT NULL,
-  `username` VARCHAR(255) NOT NULL,
   `hash` VARCHAR(255) NOT NULL,
-  PRIMARY KEY (`uuid`),
-  UNIQUE (`username`)
+  PRIMARY KEY (`uuid`)
 );
 
 CREATE TABLE IF NOT EXISTS `sessions` ( # table=2
@@ -28,7 +28,8 @@ CREATE TABLE IF NOT EXISTS `sessions` ( # table=2
   PRIMARY KEY (`token`)
 );
 
-CREATE TABLE IF NOT EXISTS `channels` ( # table=3
+CREATE TABLE IF NOT EXISTS `routing` ( # table=3
   `uuid` BIGINT NOT NULL,
-  PRIMARY KEY (`uuid`)
+  `participant` BIGINT NOT NULL,
+  PRIMARY KEY (`uuid`, `participant`)
 );

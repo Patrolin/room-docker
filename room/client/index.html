@@ -66,7 +66,8 @@
       }
       load() {
         this.initSocket();
-        this.queue = [];
+        this.receiveQueue = [];
+        this.sendQueue = [];
         this.sendInterval = null;
 
         [this.content, this.overlay] = this.e.q(/stack/).children;
@@ -87,6 +88,25 @@
         this.overlay.parentNode.c.render();
         setTimeout(this.initSocket.bind(this), 5000);
       }
+      aterror(ev) {
+        console.log(ev);
+      }
+
+      atmessage(ev) {
+        console.log(ev.data);
+        for (var line of ev.data.split('\n')) this.drawMessage(line);
+        this.output.c.render();
+        this.output.c.scroll = this.output.c.scrollMax;
+      }
+      drawMessage(value) {
+        if (value) {
+          var e = q(value);
+          var d = e.constructor === Text ? q('<text>') : q('<p>');
+          d.q(e);
+          this.output.append(d);
+          pactInit(d);
+        }
+      }
 
       onalter(ev) {
         if (ev.srcElement === this.input) {
@@ -98,35 +118,19 @@
         this.drawMessage(value);
         this.output.value += `${value}\n`;
         this.output.c.render();
+        this.output.c.scroll = this.output.c.scrollMax;
 
-        this.queue.push(value);
+        this.sendQueue.push(value);
         if (this.sendInterval === null && this.s.readyState)
-          this.sendInterval = window.setInterval(this.sendQueued.bind(this), 50); // latency spikes at approximately 1000 messages for no reason even with this
-      }
-      drawMessage(value) {
-        if (value) {
-          var e = q(value);
-          var d = e.constructor === Text ? q('<text height="32">') : q('<p>');
-          d.q(e);
-          this.output.prepend(d);
-          pactInit(d);
-        }
+          this.sendInterval = window.setInterval(this.sendQueued.bind(this), 50);
       }
       sendQueued() {
-        var value = this.queue.pop(0);
+        var value = this.sendQueue.pop(0);
         if (value) this.s.send(value);
         else {
           window.clearInterval(this.sendInterval);
           this.sendInterval = null;
         }
-      }
-      atmessage(ev) {
-        console.log(ev.data);
-        for (var line of ev.data.split('\n')) this.drawMessage(line);
-        this.output.c.render();
-      }
-      aterror(ev) {
-        console.log(ev);
       }
     }
     App.socketEvents = getEvents(App, 'at');
@@ -137,13 +141,32 @@
   <app>
     <stack>
       <row blur>
-        <div f="0.1" width="64" cHeight="64" nopadding>
-          <text>A</text>
-          <text>B</text>
-          <text>C</text>
+        <div f="0.1" width="79" cHeight="64" nopadding>
+          <text><i>Doupě</i></text>
+          <text>LRWCP</text>
+          <text
+            ><b>Pat's<br />Room</b></text
+          >
+        </div>
+        <div f="0.1" width="79" cHeight="64" nopadding>
+          <text>Groowy</text>
+          <text>raden</text>
+          <text>Majkyz</text>
+          <text>Interpreter</text>
+          <text>Poky</text>
+          <text>Váš<br />Wojciech</text>
+          <text>Pavel<br />Raiter</text>
+          <text>roudnas</text>
+          <text>Ejdrien</text>
+          <text>Ulambula</text>
+          <text>maty139cz</text>
+          <text>Kitcat</text>
+          <text>Morkalb</text>
+          <text>Terablix</text>
+          <text>Nonemara</text>
         </div>
         <div nopadding>
-          <div reverse class="output"></div>
+          <div class="output" cHeight="32"></div>
           <input f="0.1" type="text" msg placeholder="Send a message!" />
         </div>
       </row>
