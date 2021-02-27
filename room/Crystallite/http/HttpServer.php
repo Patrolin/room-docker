@@ -44,20 +44,20 @@ abstract class Server extends \Server
 
   function tick()
   {
-    if (\debug\getLevel() === \debug\HTTP){
+    if (\debug\getLevel() === \debug\HTTP) {
       $prev_connections = $GLOBALS["pconnections"] ?? "";
       $curr_connections = \debug\var_dump_str($this->connections);
-      if($curr_connections !== $prev_connections){
+      if ($curr_connections !== $prev_connections) {
         echo "Handled: " . $curr_connections . "\n\n";
       }
       $GLOBALS["pconnections"] = $curr_connections;
     }
     $this->acceptHttp();
 
-    if (\debug\getLevel() === \debug\HTTP){
+    if (\debug\getLevel() === \debug\HTTP) {
       $prev_connections = $GLOBALS["pconnections"] ?? "";
       $curr_connections = \debug\var_dump_str($this->connections);
-      if($curr_connections !== $prev_connections){
+      if ($curr_connections !== $prev_connections) {
         echo "Accepted: " . $curr_connections . "\n\n";
       }
       $GLOBALS["pconnections"] = $curr_connections;
@@ -68,7 +68,7 @@ abstract class Server extends \Server
 
   function acceptHttp()
   {
-    while ($conn = socket_accept($this->sock)) { // TODO: fight DoS
+    while ($conn = socket_accept($this->sock)) { // TODO(): fight DoS
       socket_set_nonblock($conn);
       $this->connections[] = new \http\Connection($conn);
     }

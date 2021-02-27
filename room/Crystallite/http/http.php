@@ -107,10 +107,10 @@ function createResponse($status = 200, $headers = [], $body = "")
   return "$result\r\n\r\n$body"; // technically wrong?, but easier to work with
 }
 
-// TODO: implement parseResponse()
+// TODO(): implement parseResponse()
 
 
-// TODO: implement createCookie()
+// TODO(): implement createCookie()
 
 function parseCookie(string $cookie)
 {

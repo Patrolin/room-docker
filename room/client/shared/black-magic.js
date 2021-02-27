@@ -132,7 +132,6 @@ document.addEventListener('DOMContentLoaded', () => {
       filter: opacity(50%) blur(4px);
     }
   `);
-  // TODO: reset styles
 
   var ctx = document.createElement('canvas').getContext('2d');
   fitText = function fitText(e, size, contentSize=undefined) {
@@ -271,7 +270,7 @@ Component = class Component extends Component_ {
     var paddingHeight = size.height-contentSize.height;
     var paddings = this.getRenderPaddings(children.length);
 
-    var reverse = this.e.hasAttribute('reverse'); // TODO: browsers are dumb and don't know how to make a scrollbar
+    var reverse = this.e.hasAttribute('reverse'); // TODO(): browsers are dumb and don't know how to make a scrollbar
     var top = 0;
     var left = 0.5*paddingWidth;
     var width = contentSize.width;

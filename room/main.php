@@ -30,17 +30,6 @@ class App extends websocket\Server
     ]);
     parent::__construct(...$args);
   }
-  function load_session($headers)
-  {
-    if (isset($headers["Cookie"][0])) {
-      $cookie = http\parseCookie($headers["Cookie"][0]);
-      $session = $this->database->load_session($cookie["SESSION"]);
-    } else {
-      $cookie = [];
-      $session = false;
-    }
-    return [$cookie, $session];
-  }
 
   function httpResponse(int $i)
   {
@@ -144,10 +133,6 @@ class App extends websocket\Server
           $response = http\createResponse(http\NOTFOUND, $responseHeaders);
         chdir(ROOT);
         break;
-    }
-
-    if (isset($_SESSION)) {
-      // TODO: store session in database
     }
 
     return $response;

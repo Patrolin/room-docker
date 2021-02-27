@@ -117,7 +117,7 @@ class Database
   function create_session($UUID, ?int $expire = null)
   {
     if ($expire === null)
-      $expire = time() + 30 * 86400; // TODO: avoid the year 2038 problem
+      $expire = time() + 30 * 86400; // TODO(): avoid the year 2038 problem
 
     $token = $this->new_token();
 
@@ -128,7 +128,7 @@ class Database
       ":uuid" => $UUID,
     ]);
 
-    return "SESSION=$token; expires=never; path=/; SameSite=Lax"; // expire handled by server, TODO: implement https
+    return "SESSION=$token; expires=never; path=/; SameSite=Lax"; // expire handled by server, TODO(): implement https
   }
   function new_token(): string
   {

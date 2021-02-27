@@ -68,7 +68,7 @@ class Connection extends \Connection
         }
 
         if ($opcode === \websocket\TEXT && !\utils\isUTF8($payload)) {
-          $this->close(); // TODO: implement websocket status codes
+          $this->close(); // TODO(): implement websocket status codes
         }
       } else {
         if ($opcode !== \websocket\CONTINUED) {

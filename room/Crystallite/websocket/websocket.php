@@ -118,8 +118,8 @@ function parseMessage($msg)
     $length;
   \error\assert(strlen($msg) >= $msgLength, "\$msg is missing part of the payload", "IncompleteRequest");
 
-  // TODO: handle custom subprotocols
-  // TODO: handle custom extensions
+  // TODO(): handle custom subprotocols
+  // TODO(): handle custom extensions
 
   $payload = str_repeat("?", $length);
 
