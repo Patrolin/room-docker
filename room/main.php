@@ -23,7 +23,9 @@ class App extends websocket\Server
 
   function __construct(...$args)
   {
-    $this->database = new Database("room", "root", "groot");
+    $dbhost = getenv('DB_HOST');
+    $dbpass = getenv('DB_PASS');
+    $this->database = new Database($dbhost, "room", "root", $dbpass);
     $this->database->register(0, [
       "username" => "lin",
       "password1" => "asdasdasd",
@@ -181,7 +183,7 @@ class App extends websocket\Server
   }
 }
 
-$port = getenv('APP_PORT');
+$port = getenv('ROOM_PORT');
 $port = $port ? $port : "8080";
 $server = new App("0.0.0.0", (int) $port);
 $server->run();

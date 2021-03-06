@@ -14,23 +14,25 @@ class Database
 {
   protected $conn;
 
-  function __construct($dbname, $username = "root", $password = "")
+  function __construct($dbhost, $dbname, $username = "root", $password = "")
   {
     var_dump("Connecting to database...");
     while (true) {
       try {
-        $this->connect($dbname, $username, $password);
+        $this->connect($dbhost, $dbname, $username, $password);
         break;
       } catch (\PDOException $e) {
         // PDOException is protected so i literally can't do anything here
+        var_dump($e);
+        sleep(10);
       };
     }
     var_dump("Connected to database!");
   }
 
-  function connect($dbname, $username = "root", $password = "")
+  function connect($dbhost, $dbname, $username = "root", $password = "")
   {
-    $this->conn = new \PDO("mysql:host=database;dbname=$dbname", $username, $password);
+    $this->conn = new \PDO("mysql:host=$dbhost;dbname=$dbname", $username, $password);
     $this->conn->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
     $this->conn->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_SILENT);
     $this->conn->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_NAMED);
