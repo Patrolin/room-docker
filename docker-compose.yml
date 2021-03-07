@@ -20,6 +20,10 @@ services:
     volumes:
       - *app-volume
     build: .
+    environment:
+      - ROOM_PORT=8080
+      - DB_HOST=database
+      - DB_PASS=groot
 
   database:
     networks:
