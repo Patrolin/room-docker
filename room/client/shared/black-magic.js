@@ -118,6 +118,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   `);
   style.sheet.insertRule(`
+    [bold] {
+      font-weight: bold;
+    }
+  `);
+  style.sheet.insertRule(`
   input[type="text"], input[type="password"] {
       outline: 1px solid;
     }
@@ -198,7 +203,7 @@ Component = class Component extends Component_ {
   }
   set disabled(value) {
     super.disabled = value;
-    if(this.disabledAnimation !== null) {
+    if(this.disabledAnimation != null) {
       clearInterval(this.disabledAnimation[0]);
       this.disabledAnimation = null;
     }

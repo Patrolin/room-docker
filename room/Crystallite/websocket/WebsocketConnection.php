@@ -21,11 +21,13 @@ class Connection extends \Connection
   public $response = "";
 
   public float $lastPing;
+  public $room_state;
 
-  function __construct($sock)
+  function __construct($sock, $room_state)
   {
     $this->lastPing = \utils\process_time();
     parent::__construct($sock);
+    $this->room_state = $room_state;
   }
 
   function read($bytes = 2048)

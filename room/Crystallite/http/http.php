@@ -11,15 +11,16 @@ include_once "Crystallite/http/HttpServer.php";
 
 define('http\SWITCHINGPROTOCOLS', '101 Switching Protocols');
 
-define('http\OK', '200 OK');
+define('http\OK', '200 Here you go.');
 
-define('http\FOUND', '302 Found (obsoleted by 303, 307)');
-define('http\SEEOTHER', '303 See Other'); // force GET
-define('http\TEMPORARYREDIRECT', '307 Temporary Redirect'); // keep method
+define('http\FOUND', '302 Redirect (obsoleted by 303, 307)');
+define('http\SEEOTHER', '303 Redirect with GET');
+define('http\TEMPORARYREDIRECT', '307 Redirect');
 
 define('http\BADREQUEST', '400 Bad Request');
-define('http\FORBIDDEN', '403 Forbidden'); // authentication won't help
-define('http\NOTFOUND', '404 Not Found');
+define('http\UNAUTHORIZED', '401 Please Authenticate');
+define('http\FORBIDDEN', '403 Forbidden Knowledge');
+define('http\NOTFOUND', '404 What are you doing?');
 define('http\UPGRADEREQUIRED', '426 Upgrade Required');
 
 define('http\NOTIMPLEMENTED', '501 Not Implemented');

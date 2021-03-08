@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS `channels` ( # table=0
   PRIMARY KEY (`uuid`),
   UNIQUE (`name`)
 );
+INSERT INTO `channels` (`uuid`, `table`, `name`) VALUES (0, 0, "Doupě");
 
 CREATE TABLE IF NOT EXISTS `users` ( # table=1
   `uuid` BIGINT NOT NULL,
@@ -28,8 +29,22 @@ CREATE TABLE IF NOT EXISTS `sessions` ( # table=2
   PRIMARY KEY (`token`)
 );
 
-CREATE TABLE IF NOT EXISTS `routing` ( # table=3
-  `uuid` BIGINT NOT NULL,
-  `participant` BIGINT NOT NULL,
-  PRIMARY KEY (`uuid`, `participant`)
+# unique pairs
+CREATE TABLE IF NOT EXISTS `added` ( # table=3
+  `A` BIGINT NOT NULL,
+  `B` BIGINT NOT NULL,
+  PRIMARY KEY (`A`, `B`),
+  CHECK (`A` <= `B`)
+);
+
+CREATE TABLE IF NOT EXISTS `blocked` ( # table=4
+  `A` BIGINT NOT NULL,
+  `B` BIGINT NOT NULL,
+  PRIMARY KEY (`A`, `B`)
+);
+
+CREATE TABLE IF NOT EXISTS `messages` ( # table=5
+  `A` BIGINT NOT NULL,
+  `B` BIGINT NOT NULL,
+  `msg` VARCHAR(65535) NOT NULL
 );

@@ -67,7 +67,7 @@ abstract class Server extends \http\Server
 
           $conn->incoming++;
           if (\debug\getLevel() === \debug\WEBSOCKETS && $conn->state === \Connection::READ)
-            echo "in: " . \debug\var_dump_str($msg) . "\n\n";
+            echo "in: " . \debug\var_dump_str($conn->room_state["uuid"]) . " " . \debug\var_dump_str($msg) . "\n\n";
         }
         break;
       case \Connection::READ:
@@ -113,7 +113,7 @@ abstract class Server extends \http\Server
   function websocketHandshake(int $i)
   {
     $conn = $this->connections[$i];
-    if (\debug\getLevel() === \debug\WEBSOCKETS)
+    if (\debug\getLevel() === \debug\HTTP)
       echo $conn->request;
 
     [
@@ -133,10 +133,8 @@ abstract class Server extends \http\Server
           ]
         );
         $conn->send($upgrade);
-        $conn = $this->connections[$i] = new \websocket\Connection($conn->sock);
+        $conn = $this->connections[$i] = new \websocket\Connection($conn->sock, $response[0]);
 
-        foreach ($response as $r)
-          $conn->send($r);
         return;
       } else if ($response === null)
         $response = \http\createResponse(\http\NOTIMPLEMENTED);

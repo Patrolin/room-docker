@@ -9,7 +9,6 @@ include_once "Crystallite/websocket/websocket.php";
 
 use database\Database;
 
-define('debug\MAIN', debug\nextLevel());
 debug\setLevel(debug\WEBSOCKETS);
 
 define('ROOT', getcwd());
@@ -17,7 +16,6 @@ define('ROOT', getcwd());
 
 class App extends websocket\Server
 {
-  protected $conversation = "";
   protected Database $database;
   protected $tps = 10;
 
@@ -26,7 +24,7 @@ class App extends websocket\Server
     $dbhost = getenv('DB_HOST');
     $dbpass = getenv('DB_PASS');
     $this->database = new Database($dbhost, "room", "root", $dbpass);
-    $this->database->register(0, [
+    $this->database->register(null, [
       "username" => "lin",
       "password1" => "asdasdasd",
     ]);
@@ -88,7 +86,6 @@ class App extends websocket\Server
             }
             break;
           case "POST":
-            var_dump($body);
             $query = \utils\parse_query($body);
             if (!isset($query["login"]))
               break;
@@ -145,13 +142,24 @@ class App extends websocket\Server
     $conn = $this->connections[$i];
     [
       "url" => $url,
+      "headers" => $headers,
     ] = http\parseRequest($conn->request);
     $path = $url["path"];
+
+    $cookie = isset($headers["Cookie"][0])
+      ? http\parseCookie($headers["Cookie"][0])
+      : [];
+
+    $session = $this->database->load_session($cookie["SESSION"] ?? null);
 
     switch ($path) {
       case "/chat":
       case "/chat/":
-        return [websocket\createMessage(1, websocket\TEXT, $this->conversation)];
+        if ($session !== false) {
+          return [$session];
+        } else {
+          return http\createRequest(http\UNAUTHORIZED);
+        }
       default:
         return http\createResponse(http\NOTFOUND);
     }
@@ -166,20 +174,61 @@ class App extends websocket\Server
         "payload" => $payload,
       ] = websocket\parseMessage($conn->request);
 
+      $A = $conn->room_state["uuid"];
+
       if ($opcode === websocket\TEXT) {
-        if (debug\getLevel() === debug\MAIN)
-          echo "$i. $payload\n";
-        $this->conversation .= "$payload\n";
-        foreach ($this->connections as $j => $c) {
-          if ($c !== $conn && $c instanceof websocket\Connection && $c->state === Connection::OPEN) {
-            $c->send(websocket\createMessage(1, websocket\TEXT, "$payload\n"));
-            if (debug\getLevel() === debug\MAIN)
-              echo ".$j $payload\n";
-          }
+        $in = json_decode($payload, true);
+        switch ($in["type"] ?? null) {
+          case "hello":
+            $this->sendHello($conn);
+            break;
+          case "searchUsers":
+            $conn->send(websocket\createMessage(1, websocket\TEXT, json_encode([
+              "type" => $in["type"],
+              "msg" => $this->database->search_users($in["msg"]),
+            ])));
+            break;
+          case "join":
+            $B = +$in["msg"];
+            $this->database->join_channel($A, $B);
+            foreach ($this->connections as $c) {
+              if ($c instanceof websocket\Connection) {
+                if ($c->room_state["uuid"] === $A || $c->room_state["uuid"] === $B)
+                  $this->sendHello($c);
+              }
+            }
+            break;
+          case "msg":
+            $B = $in["B"];
+            $this->database->send_message($A, $B, $in["msg"]);
+            foreach ($this->connections as $c) {
+              if ($c instanceof websocket\Connection) {
+                if ($c->room_state["uuid"] === $A || $c->room_state["uuid"] === $B)
+                  $this->sendMessage($c, $A, $B, $in["msg"]);
+              }
+            }
+            break;
         }
         $conn->acknowledge();
       }
     }
+  }
+  function sendHello($c)
+  {
+    $A = $c->room_state["uuid"];
+    $c->send(websocket\createMessage(1, websocket\TEXT, json_encode([
+      "type" => "hello",
+      "msg" => $this->database->get_user_info($A),
+    ])));
+  }
+  function sendMessage($c, int $A, int $B, string $msg)
+  {
+    $c->send(websocket\createMessage(1, websocket\TEXT, json_encode([
+      "type" => "msg",
+      "A" => $A . "",
+      "B" => $B . "",
+      "msg" => $msg,
+    ])));
   }
 }
 

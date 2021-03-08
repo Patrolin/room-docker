@@ -13,6 +13,9 @@
     output {
       white-space: pre;
     }
+    button[addgroup], button[adduser] {
+      color: #aaaaaa;
+    }
   </style>
   <script>
     class MessageInputComponent extends InputComponent {
@@ -66,20 +69,59 @@
       }
       load() {
         this.initSocket();
-        this.receiveQueue = [];
-        this.sendQueue = [];
-        this.sendInterval = null;
+        this.channel = null;
 
-        [this.content, this.overlay] = this.e.q(/stack/).children;
+        this.content = this.e.q(/[content]/);
+        this.overlay = this.e.q(/[overlay]/);
+        this.adduser = this.e.q(/div[adduser]/);
+        this.channels = this.content.q(/div[channels]/);
+        this.users = this.content.q(/div[users]/);
+        this.innercontent = this.content.q(/div[innercontent]/);
+        this.adduserButton = this.users.q(/button[adduser]/);
+        this.adduserInput = this.adduser.q(/input[adduser]/);
+        this.adduserSelect = this.adduser.q(/div[adduser]/);
         this.output = this.e.q(/.output/);
         this.input = this.e.q(/input[msg]/);
 
         this.overlayOutput = this.overlay.q(/output/);
       }
 
+      onalter(ev) {
+        switch (ev.srcElement) {
+          case this.input:
+            this.sendMessage(this.input.value);
+            this.input.value = '';
+            break;
+          case this.adduserButton:
+            this.adduser.c.disabled = false;
+            this.adduser.q(/input/).focus();
+            this.render();
+            break;
+          case this.adduserSelect:
+            this.adduser.c.disabled = true;
+            this.adduser.q(/input/).blur();
+            this.render();
+            break;
+          case this.adduserInput:
+            this.s.send(`{"type": "searchUsers", "msg": "${this.adduserInput.value}"}`);
+            break;
+          default:
+            if (ev.srcElement.matches('button[channel]')) {
+              if (this.channel !== null) this.channel.removeAttribute('bold');
+              this.channel = ev.srcElement;
+              this.channel.setAttribute('bold', '');
+              this.innercontent.c.disabled = false;
+              this.render();
+            } else if (ev.srcElement.matches('button[adduser]')) {
+              this.s.send(`{"type": "join", "msg": ${ev.srcElement.uuid}}`);
+            }
+        }
+      }
+
       atopen(ev) {
         this.content.removeAttribute('blur');
         this.overlay.setAttribute('disabled', '');
+        this.s.send('{"type": "hello"}');
       }
       atclose(ev) {
         this.content.setAttribute('blur', '');
@@ -93,10 +135,49 @@
       }
 
       atmessage(ev) {
-        console.log(ev.data);
-        for (var line of ev.data.split('\n')) this.drawMessage(line);
-        this.output.c.render();
-        this.output.c.scroll = this.output.c.scrollMax;
+        var out = JSON.parse(ev.data);
+        console.log(out);
+        switch (out.type) {
+          case 'hello':
+            this.channels.Q();
+            for (var uuid in out.msg) {
+              var x = out.msg[uuid];
+              if (x.table === 0) {
+                this.channels.q(`<button channel>${x.name}`).uuid = uuid;
+              }
+            }
+            pactInit(this.channels);
+            this.channels.c.render();
+
+            this.users.Q();
+            for (var uuid in out.msg) {
+              var x = out.msg[uuid];
+              if (x.table === 1) {
+                this.users.q(`<button channel>${x.name}`).uuid = uuid;
+              }
+            }
+            this.adduserButton = this.users.q('<button adduser>+');
+            pactInit(this.users);
+            this.users.c.render();
+            break;
+          case 'searchUsers':
+            this.adduserSelect.Q();
+            for(var x of out.msg){
+              this.adduserSelect.q(`<button adduser>${x.name}`).uuid = x.uuid;
+            }
+            pactInit(this.adduserSelect);
+            this.adduserSelect.c.render();
+            break;
+          // TODO(Patrolin): implement status
+          case 'msg':
+            // TODO(Patrolin): receive messages
+            //for (var line of ev.data.split('\n')) this.drawMessage(line);
+            //this.output.c.render();
+            //this.output.c.scroll = this.output.c.scrollMax;
+            break;
+          default:
+          //console.log(out);
+        }
       }
       drawMessage(value) {
         if (value) {
@@ -107,30 +188,19 @@
           pactInit(d);
         }
       }
-
-      onalter(ev) {
-        if (ev.srcElement === this.input) {
-          this.sendMessage(this.input.value);
-          this.input.value = '';
-        }
-      }
       sendMessage(value) {
+        if(this.channel === null) {
+          this.input.value = value;
+          return;
+        }
         this.drawMessage(value);
         this.output.value += `${value}\n`;
         this.output.c.render();
         this.output.c.scroll = this.output.c.scrollMax;
 
-        this.sendQueue.push(value);
-        if (this.sendInterval === null && this.s.readyState)
-          this.sendInterval = window.setInterval(this.sendQueued.bind(this), 50);
-      }
-      sendQueued() {
-        var value = this.sendQueue.pop(0);
-        if (value) this.s.send(value);
-        else {
-          window.clearInterval(this.sendInterval);
-          this.sendInterval = null;
-        }
+        this.s.send(
+          `{"type": "msg", "B": ${this.channel.uuid}, "msg": "${value}"}`
+        );
       }
     }
     App.socketEvents = getEvents(App, 'at');
@@ -140,38 +210,24 @@
 <body id="body">
   <app>
     <stack>
-      <row blur>
-        <div f="0.1" width="79" cHeight="64" nopadding>
-          <text><i>Doupě</i></text>
-          <text>LRWCP</text>
-          <text
-            ><b>Pat's<br />Room</b></text
-          >
+      <row content blur>
+        <div channels f="0.1" width="79" cHeight="64" nopadding>
+          <!--<button addGroup>+</button>-->
         </div>
-        <div f="0.1" width="79" cHeight="64" nopadding>
-          <text>Groowy</text>
-          <text>raden</text>
-          <text>Majkyz</text>
-          <text>Interpreter</text>
-          <text>Poky</text>
-          <text>Váš<br />Wojciech</text>
-          <text>Pavel<br />Raiter</text>
-          <text>roudnas</text>
-          <text>Ejdrien</text>
-          <text>Ulambula</text>
-          <text>maty139cz</text>
-          <text>Kitcat</text>
-          <text>Morkalb</text>
-          <text>Terablix</text>
-          <text>Nonemara</text>
+        <div users f="0.1" width="79" cHeight="64" nopadding>
+          <button adduser>+</button>
         </div>
-        <div nopadding>
+        <div innercontent nopadding disabled>
           <div class="output" cHeight="32"></div>
           <input f="0.1" type="text" msg placeholder="Send a message!" />
         </div>
       </row>
-      <div padding>
+      <div overlay padding>
         <output>Connecting<br />to server</output>
+      </div>
+      <div adduser nopadding disabled>
+        <input adduser f="0.1" placeholder="Add a user!" />
+        <div adduser cHeight="32" onclick="this.c.alter()">
       </div>
     </stack>
   </app>

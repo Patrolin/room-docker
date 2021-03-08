@@ -6,9 +6,11 @@ namespace database;
 
 
 define('database\channels', 0);
-define('database\users',         1);
-define('database\sessions',      2);
-define('database\routing',       3);
+define('database\users',    1);
+define('database\sessions', 2);
+define('database\added',    3);
+define('database\blocked',  4);
+define('database\messages', 5);
 
 class Database
 {
@@ -23,7 +25,6 @@ class Database
         break;
       } catch (\PDOException $e) {
         // PDOException is protected so i literally can't do anything here
-        var_dump($e);
         sleep(10);
       };
     }
@@ -52,12 +53,12 @@ class Database
     ]);
     if ($users) {
       $stmt = $this->conn->prepare("INSERT INTO `channels` (`uuid`, `table`, `name`) VALUES (:uuid, :table, :name)");
-      $channels = $stmt->execute([
+      $stmt->execute([
         ":uuid" => $UUID,
         ":table" => \database\users,
         ":name" => $query["username"],
       ]);
-      \error\assert($channels, "Can't INSERT into channels");
+      $this->join_channel($UUID, 0);
     }
     return $users ? '1' : '';
   }
@@ -149,7 +150,7 @@ class Database
     return $stmt->fetch() !== false;
   }
 
-  function load_session($token)
+  function load_session(?string $token)
   {
     if ($token === null) return false; // fast path
 
@@ -159,7 +160,60 @@ class Database
     return $session;
   }
 
-  function search_channels($name)
+  function get_user_info(int $UUID)
   {
+    $stmt = $this->conn->prepare("SELECT * FROM `added` WHERE `A` = :uuidA OR `B` = :uuidB");
+    $stmt->execute([
+      ":uuidA" => $UUID,
+      ":uuidB" => $UUID,
+    ]);
+    $added = $stmt->fetchAll();
+    $res = [];
+    foreach ($added as $a) {
+      $other = $a["A"] !== $UUID ? $a["A"] : $a["B"];
+      $stmt = $this->conn->prepare("SELECT * FROM `channels` WHERE `uuid` = :uuid");
+      $stmt->execute([":uuid" => $other]);
+      $channels = $stmt->fetch();
+      $res[$other] = $channels;
+    }
+    return $res;
+  }
+
+  function search_users(string $name)
+  {
+    $stmt = $this->conn->prepare("SELECT * FROM `channels` WHERE `name` LIKE :name AND `table` = :table");
+    $stmt->execute([
+      ":name" => "%" . addcslashes($name, "%_") . "%",
+      ":table" => \database\users,
+    ]);
+    $names = $stmt->fetchAll();
+    foreach ($names as $i => $x)
+      $names[$i]["uuid"] = $x["uuid"] . "";
+    return $names;
+  }
+  function join_channel(int $A, int $B)
+  {
+    if ($A > $B) {
+      $tmp = $A;
+      $A = $B;
+      $B = $tmp;
+    }
+
+    $stmt = $this->conn->prepare("INSERT INTO `added` (`A`, `B`) VALUES (:A, :B)");
+    $stmt->execute([
+      ":A" => $A,
+      ":B" => $B,
+    ]);
+  }
+  function send_message(int $A, int $B, string $msg)
+  {
+    $stmt = $this->conn->prepare("INSERT INTO `messages` (`A`, `B`, `msg`) VALUES (:A, :B, :msg)");
+    $z = $stmt->execute([
+      ":A" => $A,
+      ":B" => $B,
+      ":msg" => $msg,
+    ]);
+    // TODO(Patrolin): store timestamp for messages
+    var_dump($msg, $z);
   }
 }
