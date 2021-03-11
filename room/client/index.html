@@ -13,11 +13,14 @@
     output {
       white-space: pre;
     }
-    button[addgroup], button[adduser] {
+    button[joinchannel] {
       color: #aaaaaa;
     }
   </style>
   <script>
+    const CHANNELS = 0;
+    const USERS    = 1;
+
     class MessageInputComponent extends InputComponent {
       load() {
         this.history = [''];
@@ -70,18 +73,24 @@
       load() {
         this.initSocket();
         this.channel = null;
+        this.messages = {};
 
         this.content = this.e.q(/[content]/);
         this.overlay = this.e.q(/[overlay]/);
-        this.adduser = this.e.q(/div[adduser]/);
-        this.channels = this.content.q(/div[channels]/);
+
+        this.groups = this.content.q(/div[channels]/);
+        this.addgroupButton = this.groups.q(/button[joinchannel]/);
         this.users = this.content.q(/div[users]/);
+        this.adduserButton = this.users.q(/button[joinchannel]/);
+
         this.innercontent = this.content.q(/div[innercontent]/);
-        this.adduserButton = this.users.q(/button[adduser]/);
-        this.adduserInput = this.adduser.q(/input[adduser]/);
-        this.adduserSelect = this.adduser.q(/div[adduser]/);
         this.output = this.e.q(/.output/);
         this.input = this.e.q(/input[msg]/);
+
+        this.joinchannel = this.e.q(/div[joinchannel]/);
+        this.joinchannelInput = this.joinchannel.q(/input[joinchannel]/);
+        this.joinchannelInput.onkeydown = (e) => {if(e.key === 'Escape') this.disableJoinChannel()};
+        this.joinchannelSelect = this.joinchannel.q(/div[joinchannel]/);
 
         this.overlayOutput = this.overlay.q(/output/);
       }
@@ -92,28 +101,23 @@
             this.sendMessage(this.input.value);
             this.input.value = '';
             break;
+          case this.addgroupButton:
+            this.enableJoinChannel(CHANNELS, 'Add a group!');
+            break;
           case this.adduserButton:
-            this.adduser.c.disabled = false;
-            this.adduser.q(/input/).focus();
-            this.render();
+            this.enableJoinChannel(USERS, 'Add a user!');
             break;
-          case this.adduserSelect:
-            this.adduser.c.disabled = true;
-            this.adduser.q(/input/).blur();
-            this.render();
+          case this.joinchannelInput:
+            this.searchChannel(this.joinchannelInput.table, this.joinchannelInput.value);
             break;
-          case this.adduserInput:
-            this.s.send(`{"type": "searchUsers", "msg": "${this.adduserInput.value}"}`);
+          case this.joinchannelSelect:
+            this.disableJoinChannel();
             break;
           default:
             if (ev.srcElement.matches('button[channel]')) {
-              if (this.channel !== null) this.channel.removeAttribute('bold');
-              this.channel = ev.srcElement;
-              this.channel.setAttribute('bold', '');
-              this.innercontent.c.disabled = false;
-              this.render();
-            } else if (ev.srcElement.matches('button[adduser]')) {
-              this.s.send(`{"type": "join", "msg": ${ev.srcElement.uuid}}`);
+              this.switchChannel(ev.srcElement);
+            } else if (ev.srcElement.matches('button[joinchannel]')) {
+              this.joinChannel(ev.srcElement.uuid);
             }
         }
       }
@@ -139,68 +143,103 @@
         console.log(out);
         switch (out.type) {
           case 'hello':
-            this.channels.Q();
+            this.groups.Q();
             for (var uuid in out.msg) {
               var x = out.msg[uuid];
-              if (x.table === 0) {
-                this.channels.q(`<button channel>${x.name}`).uuid = uuid;
+              if (x.table === CHANNELS) {
+                this.groups.q(`<button channel>${x.name}`).uuid = uuid;
               }
             }
-            pactInit(this.channels);
-            this.channels.c.render();
+            this.addgroupButton = this.groups.q('<button joinchannel>+');
+            pactInit(this.groups);
+            this.groups.c.render();
 
             this.users.Q();
             for (var uuid in out.msg) {
               var x = out.msg[uuid];
-              if (x.table === 1) {
+              if (x.table === USERS) {
                 this.users.q(`<button channel>${x.name}`).uuid = uuid;
               }
             }
-            this.adduserButton = this.users.q('<button adduser>+');
+            this.adduserButton = this.users.q('<button joinchannel>+');
             pactInit(this.users);
             this.users.c.render();
             break;
-          case 'searchUsers':
-            this.adduserSelect.Q();
+          case 'search':
+            this.joinchannelSelect.Q();
             for(var x of out.msg){
-              this.adduserSelect.q(`<button adduser>${x.name}`).uuid = x.uuid;
+              this.joinchannelSelect.q(`<button joinchannel>${x.name}`).uuid = x.uuid;
             }
-            pactInit(this.adduserSelect);
-            this.adduserSelect.c.render();
+            pactInit(this.joinchannelSelect);
+            this.joinchannelSelect.c.render();
             break;
           // TODO(Patrolin): implement status
           case 'msg':
-            // TODO(Patrolin): receive messages
-            //for (var line of ev.data.split('\n')) this.drawMessage(line);
-            //this.output.c.render();
-            //this.output.c.scroll = this.output.c.scrollMax;
+            this.drawMessage(out);
             break;
-          default:
-          //console.log(out);
+          case 'reload':
+            this.output.Q();
+            for(var row of Object.values(out.msg))
+              console.log(row), this.drawMessage(row);
+            break;
         }
       }
-      drawMessage(value) {
-        if (value) {
-          var e = q(value);
-          var d = e.constructor === Text ? q('<text>') : q('<p>');
-          d.q(e);
-          this.output.append(d);
-          pactInit(d);
-        }
+
+      enableJoinChannel(table, placeholder){
+        this.joinchannelInput.table = table;
+        this.joinchannelInput.placeholder = placeholder;
+        this.joinchannel.c.disabled = false;
+        this.joinchannel.q(/input/).focus();
+        this.render();
+        this.searchChannel(this.joinchannelInput.table, this.joinchannelInput.value);
+      }
+      disableJoinChannel(){
+        this.joinchannel.c.disabled = true;
+        this.joinchannel.q(/input/).blur();
+        this.joinchannelInput.value = '';
+        this.joinchannelSelect.Q();
+        this.render();
+      }
+      searchChannel(table, name){
+        this.s.send(`{"type": "search", "table": "${table}", "msg": "${name}"}`);
+      }
+      joinChannel(channel){
+        this.s.send(`{"type": "join", "msg": ${channel}}`);
+      }
+
+      switchChannel(channel){
+        if (this.channel !== null) this.channel.removeAttribute('bold');
+        this.channel = channel;
+        this.channel.setAttribute('bold', '');
+        this.innercontent.c.disabled = false;
+        this.render();
+        this.s.send(`{"type": "reload", "msg": "${channel.uuid}"}`);
       }
       sendMessage(value) {
         if(this.channel === null) {
           this.input.value = value;
           return;
         }
-        this.drawMessage(value);
         this.output.value += `${value}\n`;
         this.output.c.render();
         this.output.c.scroll = this.output.c.scrollMax;
 
-        this.s.send(
-          `{"type": "msg", "B": ${this.channel.uuid}, "msg": "${value}"}`
-        );
+        this.s.send(JSON.stringify({
+          type: "msg",
+          B: this.channel.uuid,
+          msg: value,
+        }));
+      }
+      drawMessage(out) {
+        if(this.channel !== null && out.B === this.channel.uuid){
+          var e = q(out.msg);
+          var d = e.constructor === Text ? q('<text>') : q('<p>');
+          d.q(e);
+          this.output.append(d);
+          pactInit(d);
+          this.output.c.render();
+          this.output.c.scroll = this.output.c.scrollMax;
+        }
       }
     }
     App.socketEvents = getEvents(App, 'at');
@@ -212,10 +251,10 @@
     <stack>
       <row content blur>
         <div channels f="0.1" width="79" cHeight="64" nopadding>
-          <!--<button addGroup>+</button>-->
+          <button joinchannel>+</button>
         </div>
         <div users f="0.1" width="79" cHeight="64" nopadding>
-          <button adduser>+</button>
+          <button joinchannel>+</button>
         </div>
         <div innercontent nopadding disabled>
           <div class="output" cHeight="32"></div>
@@ -225,9 +264,9 @@
       <div overlay padding>
         <output>Connecting<br />to server</output>
       </div>
-      <div adduser nopadding disabled>
-        <input adduser f="0.1" placeholder="Add a user!" />
-        <div adduser cHeight="32" onclick="this.c.alter()">
+      <div joinchannel nopadding disabled>
+        <input joinchannel f="0.1" placeholder="Add a channel!" />
+        <div joinchannel cHeight="32" onclick="this.c.alter()">
       </div>
     </stack>
   </app>

@@ -28,17 +28,20 @@ abstract class Server extends \Server
 
   function run()
   {
-    $prevTime = \utils\process_time();
+    $now = \utils\process_time();
+    $dt = 1 / $this->tps;
     while (true) {
-      $timeBefore = \utils\process_time();
       $this->tick();
-      $timeAfter = \utils\process_time();
-      $tps = 1 / ($timeAfter - $prevTime);
-      $prevTime = $timeAfter;
-      $sleepDuration = max(0, (1 / $this->tps) - ($timeAfter - $timeBefore));
+      $prev_time = $now;
+      $prev_dt = $dt;
+      $now = \utils\process_time();
+      $dt = $prev_dt + (1 / $this->tps - ($now - $prev_time));
+
+      $seconds = (int) $dt;
+      $nanoseconds = (int) (($dt * 1e9) % 1e9);
       if (\debug\getLevel() === \debug\STATISTICS)
-        echo "TPS: " . $tps . "\r";
-      usleep((int) (1e6 * $sleepDuration));
+        echo "sleep: " . $prev_dt . " " . ($now - $prev_time) . "\n";
+      time_nanosleep($seconds, (int) $nanoseconds);
     }
   }
 

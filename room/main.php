@@ -9,7 +9,7 @@ include_once "Crystallite/websocket/websocket.php";
 
 use database\Database;
 
-debug\setLevel(debug\WEBSOCKETS);
+\debug\setLevel(\debug\WEBSOCKETS);
 
 define('ROOT', getcwd());
 
@@ -168,6 +168,8 @@ class App extends websocket\Server
   function websocketTick(int $i)
   {
     $conn = $this->connections[$i];
+    if ($conn->state === Connection::SUSPENDED)
+      $conn->state = Connection::READ;
     if ($conn->state === Connection::READ) {
       [
         "opcode" => $opcode,
@@ -182,29 +184,45 @@ class App extends websocket\Server
           case "hello":
             $this->sendHello($conn);
             break;
-          case "searchUsers":
+          case "search":
             $conn->send(websocket\createMessage(1, websocket\TEXT, json_encode([
               "type" => $in["type"],
-              "msg" => $this->database->search_users($in["msg"]),
+              "msg" => $this->database->search(+$in["table"], $in["msg"]),
             ])));
             break;
           case "join":
             $B = +$in["msg"];
             $this->database->join_channel($A, $B);
             foreach ($this->connections as $c) {
-              if ($c instanceof websocket\Connection) {
-                if ($c->room_state["uuid"] === $A || $c->room_state["uuid"] === $B)
-                  $this->sendHello($c);
-              }
+              if ($c instanceof websocket\Connection && ($c->room_state["uuid"] === $A || $c->room_state["uuid"] === $B))
+                $this->sendHello($c);
             }
             break;
+          case "leave":
+            $B = +$in["msg"];
+            $this->database->leave_channel($A, $B);
+            foreach ($this->connections as $c) {
+              if ($c instanceof websocket\Connection && $c->room_state["uuid"] === $A)
+                $this->sendHello($c);
+            }
+            break;
+          case "reload":
+            $conn->send(websocket\createMessage(1, websocket\TEXT, json_encode([
+              "type" => $in["type"],
+              "msg" => $this->database->reload_messages($A, +$in["msg"]),
+            ])));
+            break;
           case "msg":
-            $B = $in["B"];
-            $this->database->send_message($A, $B, $in["msg"]);
+            $B = +$in["B"];
+            $timestamp = $this->database->send_message($A, $B, $in["msg"]);
+            if ($timestamp === false) {
+              $conn->suspend();
+              return;
+            }
             foreach ($this->connections as $c) {
               if ($c instanceof websocket\Connection) {
                 if ($c->room_state["uuid"] === $A || $c->room_state["uuid"] === $B)
-                  $this->sendMessage($c, $A, $B, $in["msg"]);
+                  $this->sendMessage($c, $A, $B, $timestamp, $in["msg"]);
               }
             }
             break;
@@ -221,12 +239,13 @@ class App extends websocket\Server
       "msg" => $this->database->get_user_info($A),
     ])));
   }
-  function sendMessage($c, int $A, int $B, string $msg)
+  function sendMessage($c, int $A, int $B, int $timestamp, string $msg)
   {
     $c->send(websocket\createMessage(1, websocket\TEXT, json_encode([
       "type" => "msg",
       "A" => $A . "",
       "B" => $B . "",
+      "timestamp" => $timestamp . "",
       "msg" => $msg,
     ])));
   }

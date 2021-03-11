@@ -4,7 +4,7 @@ SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "+01:00";
 
 
-CREATE DATABASE IF NOT EXISTS `room` CHARACTER SET utf8 COLLATE utf8_bin;
+CREATE DATABASE IF NOT EXISTS `room` CHARACTER SET utf8 COLLATE utf8_czech_ci;
 USE `room`;
 
 CREATE TABLE IF NOT EXISTS `channels` ( # table=0
@@ -46,5 +46,7 @@ CREATE TABLE IF NOT EXISTS `blocked` ( # table=4
 CREATE TABLE IF NOT EXISTS `messages` ( # table=5
   `A` BIGINT NOT NULL,
   `B` BIGINT NOT NULL,
-  `msg` VARCHAR(65535) NOT NULL
+  `timestamp` BIGINT NOT NULL,
+  `msg` VARCHAR(65535) NOT NULL,
+  PRIMARY KEY (`A`, `B`, `timestamp`)
 );

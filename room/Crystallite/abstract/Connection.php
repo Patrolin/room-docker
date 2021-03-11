@@ -7,9 +7,10 @@ abstract class Connection
 {
   public $sock;
 
-  const OPEN = 0;
-  const READ = 1;
-  const CLOSED = 2;
+  const OPEN      = 0;
+  const READ      = 1;
+  const CLOSED    = 2;
+  const SUSPENDED = 3;
 
   public $state = Connection::OPEN;
   public $request = "";
@@ -43,5 +44,12 @@ abstract class Connection
 
     @socket_close($this->sock);
     $this->state = Connection::CLOSED;
+  }
+
+  function suspend()
+  {
+    \error\assert($this->state !== Connection::OPEN, "Cannot suspend() on Connection::OPEN");
+    \error\assert($this->state !== Connection::CLOSED, "Cannot suspend() on Connection::CLOSED");
+    $this->state = Connection::SUSPENDED;
   }
 }

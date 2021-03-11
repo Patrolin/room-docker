@@ -143,7 +143,7 @@ class Database
   }
   function token_exists($token): bool
   {
-    $stmt = $this->conn->prepare("SELECT `token` FROM `sessions` WHERE `token` = :token");
+    $stmt = $this->conn->prepare("SELECT * FROM `sessions` WHERE `token` = :token");
     $stmt->execute([
       ":token" => $token,
     ]);
@@ -160,31 +160,42 @@ class Database
     return $session;
   }
 
-  function get_user_info(int $UUID)
+  function get_user_info(int $A)
   {
-    $stmt = $this->conn->prepare("SELECT * FROM `added` WHERE `A` = :uuidA OR `B` = :uuidB");
+    $stmt = $this->conn->prepare("SELECT * FROM `blocked` WHERE `A` = :A");
     $stmt->execute([
-      ":uuidA" => $UUID,
-      ":uuidB" => $UUID,
+      ":A" => $A,
+    ]);
+    $blocked = new \Ds\Set();
+    foreach ($stmt->fetchAll() as $row) {
+      $blocked->add($row["B"]);
+    }
+
+    $stmt = $this->conn->prepare("SELECT * FROM `added` WHERE `A` = :A OR `B` = :B");
+    $stmt->execute([
+      ":A" => $A,
+      ":B" => $A,
     ]);
     $added = $stmt->fetchAll();
     $res = [];
     foreach ($added as $a) {
-      $other = $a["A"] !== $UUID ? $a["A"] : $a["B"];
-      $stmt = $this->conn->prepare("SELECT * FROM `channels` WHERE `uuid` = :uuid");
-      $stmt->execute([":uuid" => $other]);
-      $channels = $stmt->fetch();
-      $res[$other] = $channels;
+      $B = $a["A"] !== $A ? $a["A"] : $a["B"];
+      if (!$blocked->contains($B)) {
+        $stmt = $this->conn->prepare("SELECT * FROM `channels` WHERE `uuid` = :uuid");
+        $stmt->execute([":uuid" => $B]);
+        $channels = $stmt->fetch();
+        $res[$B] = $channels;
+      }
     }
     return $res;
   }
 
-  function search_users(string $name)
+  function search(int $table, string $name)
   {
     $stmt = $this->conn->prepare("SELECT * FROM `channels` WHERE `name` LIKE :name AND `table` = :table");
     $stmt->execute([
       ":name" => "%" . addcslashes($name, "%_") . "%",
-      ":table" => \database\users,
+      ":table" => $table,
     ]);
     $names = $stmt->fetchAll();
     foreach ($names as $i => $x)
@@ -193,27 +204,76 @@ class Database
   }
   function join_channel(int $A, int $B)
   {
-    if ($A > $B) {
-      $tmp = $A;
-      $A = $B;
-      $B = $tmp;
+    if ($A <= $B) {
+      $smaller = $A;
+      $bigger = $B;
+    } else {
+      $smaller = $B;
+      $bigger = $A;
     }
 
     $stmt = $this->conn->prepare("INSERT INTO `added` (`A`, `B`) VALUES (:A, :B)");
+    $stmt->execute([
+      ":A" => $smaller,
+      ":B" => $bigger,
+    ]);
+
+    $stmt = $this->conn->prepare("DELETE FROM `blocked` WHERE `A` = :A AND `B` = :B");
     $stmt->execute([
       ":A" => $A,
       ":B" => $B,
     ]);
   }
-  function send_message(int $A, int $B, string $msg)
+  function leave_channel(int $A, int $B)
   {
-    $stmt = $this->conn->prepare("INSERT INTO `messages` (`A`, `B`, `msg`) VALUES (:A, :B, :msg)");
-    $z = $stmt->execute([
+    $stmt = $this->conn->prepare("INSERT INTO `blocked` (`A`, `B`) VALUES (:A, :B)");
+    $stmt->execute([
       ":A" => $A,
       ":B" => $B,
+    ]);
+  }
+
+  function reload_messages(int $A, int $B)
+  {
+    $stmt = $this->conn->prepare("SELECT * FROM `channels` WHERE `uuid` = :uuid");
+    $stmt->execute([
+      ":uuid" => $B,
+    ]);
+    if ($stmt->fetch()["table"] === \database\users) {
+      $stmt = $this->conn->prepare("SELECT * FROM `messages` WHERE (`A` = :A1 AND `B` = :B1) OR (`A` = :B1 AND `B` = :A1) ORDER BY `timestamp`");
+      $stmt->execute([
+        ":A1" => $A,
+        ":B1" => $B,
+        ":A2" => $A,
+        ":B2" => $B,
+      ]);
+    } else {
+      $stmt = $this->conn->prepare("SELECT * FROM `messages` WHERE `B` = :B ORDER BY `timestamp`");
+      $stmt->execute([
+        ":B" => $B,
+      ]);
+    }
+    $res = [];
+    foreach ($stmt->fetchAll() as $row) {
+      $res[] = [
+        "A" => $row["A"] . "",
+        "B" => $row["B"] . "",
+        "timestamp" => $row["timestamp"] . "",
+        "msg" => $row["msg"] . "",
+      ];
+    }
+    return $res;
+  }
+  function send_message(int $A, int $B, string $msg)
+  {
+    $timestamp = time();
+    $stmt = $this->conn->prepare("INSERT INTO `messages` (`A`, `B`, `timestamp`, `msg`) VALUES (:A, :B, :timestamp, :msg)");
+    $messages = $stmt->execute([
+      ":A" => $A,
+      ":B" => $B,
+      ":timestamp" => $timestamp,
       ":msg" => $msg,
     ]);
-    // TODO(Patrolin): store timestamp for messages
-    var_dump($msg, $z);
+    return $messages !== false ? $timestamp : false;
   }
 }
