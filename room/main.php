@@ -269,6 +269,7 @@ class App extends websocket\Server
   }
 }
 
+sleep(10);
 $port = getenv('ROOM_PORT');
 $port = $port ? $port : "8080";
 $server = new App("0.0.0.0", (int) $port);
