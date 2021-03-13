@@ -26,7 +26,7 @@ abstract class Connection
 
   function send(string $response)
   {
-    \error\assert($this->state !== Connection::CLOSED, "Cannot send() on Connection::CLOSED");
+    if ($this->state === Connection::CLOSED) return false;
 
     if (@socket_write($this->sock, $response) === false) {
       $err = socket_last_error($this->sock);

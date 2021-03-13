@@ -24,10 +24,12 @@ class App extends websocket\Server
     $dbhost = getenv('DB_HOST');
     $dbpass = getenv('DB_PASS');
     $this->database = new Database($dbhost, "room", "root", $dbpass);
-    $this->database->register(null, [
-      "username" => "lin",
-      "password1" => "asdasdasd",
-    ]);
+    foreach (["lin", "foo", "bar", "baz"] as $name) {
+      $this->database->register(null, [
+        "username" => $name,
+        "password1" => "asdasdasd",
+      ]);
+    }
     parent::__construct(...$args);
   }
 
@@ -169,13 +171,15 @@ class App extends websocket\Server
   {
     $online = new \Ds\Set();
     foreach ($this->connections as $c) {
-      $online->add($c->room_state["uuid"] . "");
+      if ($c instanceof \websocket\Connection)
+        $online->add($c->room_state["uuid"] . "");
     }
     foreach ($this->connections as $c) {
-      $c->send(websocket\createMessage(1, websocket\TEXT, json_encode([
-        "type" => "online",
-        "msg" => $online->toArray(),
-      ])));
+      if ($c instanceof \websocket\Connection)
+        $c->send(websocket\createMessage(1, websocket\TEXT, json_encode([
+          "type" => "online",
+          "msg" => $online->toArray(),
+        ])));
     }
   }
 
@@ -212,9 +216,9 @@ class App extends websocket\Server
                 $this->sendHello($c);
             }
             break;
-          case "leave":
+          case "block":
             $B = +$in["msg"];
-            $this->database->leave_channel($A, $B);
+            $this->database->block_channel($A, $B);
             foreach ($this->connections as $c) {
               if ($c instanceof websocket\Connection && $c->room_state["uuid"] === $A)
                 $this->sendHello($c);

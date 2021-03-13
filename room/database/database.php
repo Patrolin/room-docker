@@ -224,7 +224,7 @@ class Database
       ":B" => $B,
     ]);
   }
-  function leave_channel(int $A, int $B)
+  function block_channel(int $A, int $B)
   {
     $stmt = $this->conn->prepare("INSERT INTO `blocked` (`A`, `B`) VALUES (:A, :B)");
     $stmt->execute([

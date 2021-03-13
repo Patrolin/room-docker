@@ -68,8 +68,15 @@
       load(){
         this.onlinebadge = this.e.q(`<div nooutline css style="position: absolute; top: 0; left: 5px; color: ${this.gray}; pointer-events: none">●`);
         this.notificationsbadge = this.e.q(`<div nooutline css style="position: absolute; top: 2px; right: 5px; pointer-events: none">`);
+        this.deletebutton = this.e.q('<button blockchannel nooutline css style="position: absolute; bottom: 2px; left: 5px; font-size: 20px; color: #aaaaaa" disabled>-')
         for(var f of this.e.children)
           pactInit(f);
+      }
+      onmouseenter(){
+        this.deletebutton.c.disabled = false;
+      }
+      onmouseleave(){
+        this.deletebutton.c.disabled = true;
       }
       set online(value){
         this.onlinebadge.style.color = value;
@@ -142,6 +149,8 @@
               this.switchChannel(ev.srcElement);
             } else if (ev.srcElement.matches('button[joinchannel]')) {
               this.joinChannel(ev.srcElement.uuid);
+            } else if (ev.srcElement.matches('button[blockchannel]')) {
+              this.blockChannel(ev.srcElement.parentNode.uuid);
             }
         }
       }
@@ -167,6 +176,8 @@
         console.log(out);
         switch (out.type) {
           case 'hello':
+            var prev_uuid = this.channel != null ? this.channel.uuid : null;
+
             this.groups.Q();
             for (var uuid in out.msg) {
               var x = out.msg[uuid];
@@ -187,6 +198,12 @@
             }
             this.adduserButton = this.users.q('<button joinchannel>+');
             pactInit(this.users);
+
+            var prevChannel = [...this.groups.children, ...this.users.children].find(x => x.uuid === prev_uuid);
+            this.channel = prevChannel;
+            if(this.channel != null)
+              this.channel.q(/button/).setAttribute('bold', '');
+
             this.users.c.render();
             break;
           case 'search':
@@ -204,7 +221,8 @@
               map[e.uuid] = e;
             }
             for(var x of out.msg){
-              map[x].c.online = ChannelComponent.green;
+              if(map[x])
+                map[x].c.online = ChannelComponent.green;
             }
           case 'msg':
             var inbox = (out.B === this.me)
@@ -217,7 +235,7 @@
           case 'reload':
             this.output.Q();
             for(var row of Object.values(out.msg))
-              console.log(row), this.drawMessage(row);
+              this.drawMessage(row);
             break;
         }
       }
@@ -243,9 +261,12 @@
       joinChannel(channel){
         this.s.send(`{"type": "join", "msg": ${channel}}`);
       }
+      blockChannel(channel){
+        this.s.send(`{"type": "block", "msg": ${channel}}`);
+      }
 
       switchChannel(channel){
-        if (this.channel !== null) this.channel.q(/button/).removeAttribute('bold');
+        if (this.channel != null) this.channel.q(/button/).removeAttribute('bold');
         channel.setAttribute('bold', '');
         this.channel = channel.parentNode;
         this.channel.notifications = 0;
@@ -269,7 +290,7 @@
         }));
       }
       drawMessage(out) {
-        if(this.channel !== null && out.B === this.channel.uuid){
+        if(this.channel != null && (out.B === this.channel.uuid || (out.B === this.me && out.A === this.channel.uuid))){
           var e = q(out.msg);
           var d = e.constructor === Text ? q('<text>') : q('<p>');
           d.q(e);
@@ -288,11 +309,18 @@
   <app>
     <stack>
       <row content blur>
-        <div channels f="0.1" width="79" cHeight="64" nopadding>
-          <button joinchannel>+</button>
-        </div>
-        <div users f="0.1" width="79" cHeight="64" nopadding>
-          <button joinchannel>+</button>
+        <div nopadding width="158">
+          <row nopadding>
+            <div channels cHeight="64" nopadding>
+              <button joinchannel>+</button>
+            </div>
+            <div users cHeight="64" nopadding>
+              <button joinchannel>+</button>
+            </div>
+          </row>
+          <div f="0.1">
+            <button onclick="deleteCookie('SESSION'); redirect(`${window.location.origin}/login`);">Logout</button>
+          </div>
         </div>
         <div innercontent nopadding disabled>
           <div class="output" cHeight="32"></div>

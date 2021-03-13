@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS `channels` ( # table=0
   PRIMARY KEY (`uuid`),
   UNIQUE (`name`)
 );
-INSERT INTO `channels` (`uuid`, `table`, `name`) VALUES (0, 0, "Doupě");
+REPLACE `channels` (`uuid`, `table`, `name`) VALUES (0, 0, "Doupě");
 
 CREATE TABLE IF NOT EXISTS `users` ( # table=1
   `uuid` BIGINT NOT NULL,
