@@ -69,7 +69,7 @@ class Database
       $stmt = $this->conn->query("SELECT UUID_SHORT()");
       $UUID = $stmt->fetch()["UUID_SHORT()"];
     } while ($this->UUID_exists($UUID));
-    return $UUID;
+    return intval($UUID);
   }
   function UUID_exists($UUID): bool
   {
