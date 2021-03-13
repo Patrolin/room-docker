@@ -9,7 +9,7 @@ include_once "Crystallite/websocket/websocket.php";
 
 use database\Database;
 
-\debug\setLevel(\debug\WEBSOCKETS);
+\debug\setLevel(\debug\NONE);
 
 define('ROOT', getcwd());
 
@@ -162,6 +162,20 @@ class App extends websocket\Server
         }
       default:
         return http\createResponse(http\NOTFOUND);
+    }
+  }
+
+  function tickSecond()
+  {
+    $online = new \Ds\Set();
+    foreach ($this->connections as $c) {
+      $online->add($c->room_state["uuid"] . "");
+    }
+    foreach ($this->connections as $c) {
+      $c->send(websocket\createMessage(1, websocket\TEXT, json_encode([
+        "type" => "online",
+        "msg" => $online->toArray(),
+      ])));
     }
   }
 

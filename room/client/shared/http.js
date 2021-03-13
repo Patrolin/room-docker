@@ -8,6 +8,16 @@ function fetchTxt(...args){
   return fetch(...args).then((r) => r.text());
 }
 
+function getCookie(key){
+  for(var x of document.cookie.split('; ')){
+    var m = x.match('([^=]*)=(.*)');
+    if(m){
+      if(m[1] === key) return m[2];
+    } else{
+      if(key === '') return x;
+    }
+  }
+}
 function setCookie(value){
   document.cookie = value;
 }

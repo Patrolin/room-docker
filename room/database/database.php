@@ -131,7 +131,7 @@ class Database
       ":uuid" => $UUID,
     ]);
 
-    return "SESSION=$token; expires=never; path=/; SameSite=Lax"; // expire handled by server, TODO(): implement https
+    return "SESSION=$token-$UUID; expires=never; path=/; SameSite=Lax"; // expire handled by server, TODO(): implement https
   }
   function new_token(): string
   {
@@ -155,7 +155,7 @@ class Database
     if ($token === null) return false; // fast path
 
     $stmt = $this->conn->prepare("SELECT * FROM `sessions` WHERE `token` = :token");
-    $stmt->execute([":token" => $token]);
+    $stmt->execute([":token" => explode("-", $token, 2)[0]]);
     $session = $stmt->fetch();
     return $session;
   }
@@ -240,7 +240,7 @@ class Database
       ":uuid" => $B,
     ]);
     if ($stmt->fetch()["table"] === \database\users) {
-      $stmt = $this->conn->prepare("SELECT * FROM `messages` WHERE (`A` = :A1 AND `B` = :B1) OR (`A` = :B1 AND `B` = :A1) ORDER BY `timestamp`");
+      $stmt = $this->conn->prepare("SELECT * FROM `messages` WHERE (`A` = :A1 AND `B` = :B1) OR (`A` = :B2 AND `B` = :A2) ORDER BY `timestamp`");
       $stmt->execute([
         ":A1" => $A,
         ":B1" => $B,

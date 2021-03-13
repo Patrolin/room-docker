@@ -30,12 +30,18 @@ abstract class Server extends \Server
   {
     $now = \utils\process_time();
     $dt = 1 / $this->tps;
+    $total = (int) $now + 10;
     while (true) {
+      if ($now > $total) {
+        $this->tickSecond();
+        $total += 10;
+      }
       $this->tick();
       $prev_time = $now;
       $prev_dt = $dt;
       $now = \utils\process_time();
       $dt = $prev_dt + (1 / $this->tps - ($now - $prev_time));
+      $dt = min(max(0, $dt), 1 / $this->tps);
 
       $seconds = (int) $dt;
       $nanoseconds = (int) (($dt * 1e9) % 1e9);
@@ -45,6 +51,9 @@ abstract class Server extends \Server
     }
   }
 
+  function tickSecond()
+  {
+  }
   function tick()
   {
     if (\debug\getLevel() === \debug\HTTP) {

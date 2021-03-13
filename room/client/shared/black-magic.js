@@ -118,6 +118,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   `);
   style.sheet.insertRule(`
+    [nooutline] {
+      outline: none;
+    }
+  `);
+  style.sheet.insertRule(`
     [bold] {
       font-weight: bold;
     }
@@ -321,7 +326,8 @@ Component = class Component extends Component_ {
     var width = contentSize.width;
     var height = contentSize.height;
     for(var f of children)
-      f.c.renderChild({ top, left, width, height });
+      if(!f.hasAttribute('css'))
+        f.c.renderChild({ top, left, width, height });
   }
 
   getRenderLine(children, contentMain, attribute, cMain){
