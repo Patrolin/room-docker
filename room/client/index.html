@@ -259,10 +259,10 @@
         this.s.send(`{"type": "search", "table": "${table}", "msg": "${name}"}`);
       }
       joinChannel(channel){
-        this.s.send(`{"type": "join", "msg": ${channel}}`);
+        this.s.send(`{"type": "join", "msg": "${channel}"}`);
       }
       blockChannel(channel){
-        this.s.send(`{"type": "block", "msg": ${channel}}`);
+        this.s.send(`{"type": "block", "msg": "${channel}"}`);
       }
 
       switchChannel(channel){

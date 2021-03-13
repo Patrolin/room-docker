@@ -39,7 +39,7 @@ class Database
     $this->conn->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_NAMED);
   }
 
-  function register(?int $UUID, array $query): string
+  function register(?string $UUID, array $query): string
   {
     if ($UUID === null) $UUID = $this->new_UUID();
     \error\assert(isset($query["username"]), "Incomplete query", "IncompleteRequest");
@@ -58,20 +58,20 @@ class Database
         ":table" => \database\users,
         ":name" => $query["username"],
       ]);
-      $this->join_channel($UUID, 0);
+      $this->join_channel($UUID, "0");
     }
     return $users ? '1' : '';
   }
-  function new_UUID(): int
+  function new_UUID(): string
   {
     // paranoid UUID generation
     do {
       $stmt = $this->conn->query("SELECT UUID_SHORT()");
       $UUID = $stmt->fetch()["UUID_SHORT()"];
     } while ($this->UUID_exists($UUID));
-    return intval($UUID);
+    return $UUID;
   }
-  function UUID_exists($UUID): bool
+  function UUID_exists(string $UUID): bool
   {
     $stmt = $this->conn->prepare("SELECT `uuid` FROM `channels` WHERE `uuid` = :uuid");
     $stmt->execute([
@@ -105,7 +105,7 @@ class Database
     }
     return '';
   }
-  function password_matches(array $query, $UUID)
+  function password_matches(array $query, string $UUID)
   {
     $stmt = $this->conn->prepare("SELECT `hash` FROM `users` WHERE `uuid` = :uuid");
     $stmt->execute([
@@ -117,7 +117,7 @@ class Database
     $hash = $users["hash"];
     return password_verify($query["password1"], $hash);
   }
-  function create_session($UUID, ?int $expire = null)
+  function create_session(string $UUID, ?int $expire = null)
   {
     if ($expire === null)
       $expire = time() + 30 * 86400; // TODO(): avoid the year 2038 problem
@@ -160,7 +160,7 @@ class Database
     return $session;
   }
 
-  function get_user_info(int $A)
+  function get_user_info(string $A)
   {
     $stmt = $this->conn->prepare("SELECT * FROM `blocked` WHERE `A` = :A");
     $stmt->execute([
@@ -202,7 +202,7 @@ class Database
       $names[$i]["uuid"] = $x["uuid"] . "";
     return $names;
   }
-  function join_channel(int $A, int $B)
+  function join_channel(string $A, string $B)
   {
     if ($A <= $B) {
       $smaller = $A;
@@ -224,7 +224,7 @@ class Database
       ":B" => $B,
     ]);
   }
-  function block_channel(int $A, int $B)
+  function block_channel(string $A, string $B)
   {
     $stmt = $this->conn->prepare("INSERT INTO `blocked` (`A`, `B`) VALUES (:A, :B)");
     $stmt->execute([
@@ -233,7 +233,7 @@ class Database
     ]);
   }
 
-  function reload_messages(int $A, int $B)
+  function reload_messages(string $A, string $B)
   {
     $stmt = $this->conn->prepare("SELECT * FROM `channels` WHERE `uuid` = :uuid");
     $stmt->execute([
@@ -264,7 +264,7 @@ class Database
     }
     return $res;
   }
-  function send_message(int $A, int $B, string $msg)
+  function send_message(string $A, string $B, string $msg)
   {
     $timestamp = time();
     $stmt = $this->conn->prepare("INSERT INTO `messages` (`A`, `B`, `timestamp`, `msg`) VALUES (:A, :B, :timestamp, :msg)");

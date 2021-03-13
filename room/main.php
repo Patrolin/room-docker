@@ -209,7 +209,7 @@ class App extends websocket\Server
             ])));
             break;
           case "join":
-            $B = +$in["msg"];
+            $B = $in["msg"];
             $this->database->join_channel($A, $B);
             foreach ($this->connections as $c) {
               if ($c instanceof websocket\Connection && ($c->room_state["uuid"] === $A || $c->room_state["uuid"] === $B))
@@ -217,7 +217,7 @@ class App extends websocket\Server
             }
             break;
           case "block":
-            $B = +$in["msg"];
+            $B = $in["msg"];
             $this->database->block_channel($A, $B);
             foreach ($this->connections as $c) {
               if ($c instanceof websocket\Connection && $c->room_state["uuid"] === $A)
@@ -227,11 +227,11 @@ class App extends websocket\Server
           case "reload":
             $conn->send(websocket\createMessage(1, websocket\TEXT, json_encode([
               "type" => $in["type"],
-              "msg" => $this->database->reload_messages($A, +$in["msg"]),
+              "msg" => $this->database->reload_messages($A, $in["msg"]),
             ])));
             break;
           case "msg":
-            $B = +$in["B"];
+            $B = $in["B"];
             $timestamp = $this->database->send_message($A, $B, $in["msg"]);
             if ($timestamp === false) {
               $conn->suspend();
@@ -257,7 +257,7 @@ class App extends websocket\Server
       "msg" => $this->database->get_user_info($A),
     ])));
   }
-  function sendMessage($c, int $A, int $B, int $timestamp, string $msg)
+  function sendMessage($c, string $A, string $B, int $timestamp, string $msg)
   {
     $c->send(websocket\createMessage(1, websocket\TEXT, json_encode([
       "type" => "msg",
