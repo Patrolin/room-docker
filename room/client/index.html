@@ -290,6 +290,7 @@
         }));
       }
       drawMessage(out) {
+        // TODO(Patrolin): show who is talking?
         if(this.channel != null && (out.B === this.channel.uuid || (out.B === this.me && out.A === this.channel.uuid))){
           var e = q(out.msg);
           var d = e.constructor === Text ? q('<text>') : q('<p>');
