@@ -67,7 +67,7 @@ class Database
     // paranoid UUID generation
     do {
       $stmt = $this->conn->query("SELECT UUID_SHORT()");
-      $UUID = $stmt->fetch()["UUID_SHORT()"];
+      $UUID = $stmt->fetch()["UUID_SHORT()"] . "";
     } while ($this->UUID_exists($UUID));
     return $UUID;
   }

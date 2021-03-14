@@ -67,9 +67,12 @@ class App extends websocket\Server
 
     switch ($path) {
       case "./":
+        $response = http\createResponse(http\OK, $responseHeaders, file_get_contents("client/index.html"));
+        break;
+      case "./chat":
         $session = $this->database->load_session($cookie["SESSION"] ?? null);
         if ($session !== false)
-          $response = http\createResponse(http\OK, $responseHeaders, file_get_contents("client/index.html"));
+          $response = http\createResponse(http\OK, $responseHeaders, file_get_contents("client/chat.html"));
         else {
           $responseHeaders["Location"] = "http://$host/login";
           $response = http\createResponse(\http\SEEOTHER, $responseHeaders);
@@ -81,7 +84,7 @@ class App extends websocket\Server
           case "GET":
             $session = $this->database->load_session($cookie["SESSION"] ?? null);
             if ($session !== false) {
-              $responseHeaders["Location"] = "http://$host/";
+              $responseHeaders["Location"] = "http://$host/chat";
               $response = http\createResponse(\http\SEEOTHER, $responseHeaders);
             } else {
               $response = http\createResponse(http\OK, $responseHeaders, file_get_contents("client/login.html"));
