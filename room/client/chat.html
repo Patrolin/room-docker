@@ -279,9 +279,10 @@
           this.input.value = value;
           return;
         }
+        var scrollToBottom = this.output.c.scroll === this.output.c.scrollMax;
         this.output.value += `${value}\n`;
         this.output.c.render();
-        this.output.c.scroll = this.output.c.scrollMax;
+        if(scrollToBottom) this.output.c.scroll = this.output.c.scrollMax;
 
         this.s.send(JSON.stringify({
           type: "msg",
@@ -293,12 +294,17 @@
         // TODO(Patrolin): show who is talking?
         if(this.channel != null && (out.B === this.channel.uuid || (out.B === this.me && out.A === this.channel.uuid))){
           var e = q(out.msg);
-          var d = e.constructor === Text ? q('<text>') : q('<p>');
+          var d = e.constructor === Text ? q('<text>') : q('<p>'); // TODO: handle invalid HTML
+          // TODO: remove on*
+          // TODO: remove style="font-size:*;"
+          // TODO: handle [height]
+          // TODO: fix [css] children
           d.q(e);
+          var scrollToBottom = this.output.c.scroll === this.output.c.scrollMax;
           this.output.append(d);
           pactInit(d);
           this.output.c.render();
-          this.output.c.scroll = this.output.c.scrollMax;
+          if(scrollToBottom) this.output.c.scroll = this.output.c.scrollMax;
         }
       }
     }
