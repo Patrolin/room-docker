@@ -102,8 +102,10 @@
       load() {
         this.initSocket();
         this.me = getCookie('SESSION').split('-')[1];
+        this.myname = getCookie('SESSION').split('-')[2];
         this.channel = null;
         this.messages = {};
+        this.usernames = {[this.me]: this.myname};
 
         this.content = this.e.q(/[content]/);
         this.overlay = this.e.q(/[overlay]/);
@@ -114,7 +116,7 @@
         this.adduserButton = this.users.q(/button[joinchannel]/);
 
         this.innercontent = this.content.q(/div[innercontent]/);
-        this.output = this.e.q(/.output/);
+        this.output = this.e.q(/div[output]/);
         this.input = this.e.q(/input[msg]/);
 
         this.joinchannel = this.e.q(/div[joinchannel]/);
@@ -194,6 +196,7 @@
               var x = out.msg[uuid];
               if (x.table === USERS) {
                 this.users.q(`<stack channel><button channel>${x.name}`).uuid = uuid;
+                this.usernames[uuid] = x.name;
               }
             }
             this.adduserButton = this.users.q('<button joinchannel>+');
@@ -291,12 +294,10 @@
         }));
       }
       drawMessage(out) {
-        // TODO(Patrolin): show who is talking?
         if(this.channel != null && (out.B === this.channel.uuid || (out.B === this.me && out.A === this.channel.uuid))){
           var e = document.createTextNode(out.msg);
-          var d = q('<text>');
-          // TODO: fix [css] children
-          d.q(e);
+          var d = q(`<row><b width="50">${this.usernames[out.A]}</b><text>`);
+          d.q(/text/).q(e);
           var scrollToBottom = this.output.c.scroll === this.output.c.scrollMax;
           this.output.append(d);
           pactInit(d);
@@ -327,7 +328,7 @@
           </div>
         </div>
         <div innercontent nopadding disabled>
-          <div class="output" cHeight="32"></div>
+          <div output cHeight="32" padding></div>
           <input f="0.1" type="text" msg placeholder="Send a message!" />
         </div>
       </row>

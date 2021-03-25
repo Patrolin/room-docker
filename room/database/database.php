@@ -131,7 +131,13 @@ class Database
       ":uuid" => $UUID,
     ]);
 
-    return "SESSION=$token-$UUID; expires=never; path=/; SameSite=Lax"; // expire handled by server, TODO(): implement https
+    $stmt = $this->conn->prepare("SELECT * FROM `channels` WHERE `uuid` = :uuid");
+    $stmt->execute([
+      ":uuid" => $UUID,
+    ]);
+    $username = $stmt->fetch()["name"];
+
+    return "SESSION=$token-$UUID-$username; expires=never; path=/; SameSite=Lax"; // expire handled by server (or it would be if PHP wasn't 32-bit), TODO(): implement https
   }
   function new_token(): string
   {
@@ -183,8 +189,7 @@ class Database
       if (!$blocked->contains($B)) {
         $stmt = $this->conn->prepare("SELECT * FROM `channels` WHERE `uuid` = :uuid");
         $stmt->execute([":uuid" => $B]);
-        $channels = $stmt->fetch();
-        $res[$B] = $channels;
+        $res[$B] = $stmt->fetch();
       }
     }
     return $res;
