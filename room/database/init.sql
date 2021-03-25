@@ -44,9 +44,9 @@ CREATE TABLE IF NOT EXISTS `blocked` ( # table=4
 );
 
 CREATE TABLE IF NOT EXISTS `messages` ( # table=5
+  `id` INT NOT NULL AUTO_INCREMENT,
   `A` VARCHAR(255) NOT NULL,
   `B` VARCHAR(255) NOT NULL,
-  `timestamp` BIGINT NOT NULL,
   `msg` VARCHAR(65535) NOT NULL,
-  PRIMARY KEY (`A`, `B`, `timestamp`)
+  PRIMARY KEY (`id`)
 );

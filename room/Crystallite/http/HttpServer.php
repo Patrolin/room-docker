@@ -30,11 +30,11 @@ abstract class Server extends \Server
   {
     $now = \utils\process_time();
     $dt = 1 / $this->tps;
-    $total = (int) $now + 10;
+    $total = $now + $this->tps;
     while (true) {
       if ($now > $total) {
         $this->tickSecond();
-        $total += 10;
+        $total += $this->tps;
       }
       $this->tick();
       $prev_time = $now;

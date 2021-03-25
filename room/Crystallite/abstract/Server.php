@@ -10,7 +10,7 @@ abstract class Server
   protected int $port;
   protected $connections = [];
   protected $tps = 50; // maximum ticks per connection per second
-  const heartbeatMin = 5; // seconds
+  const heartbeatMin = 60; // seconds
   const heartbeatMax = 6000; // seconds
 
   function __construct($sock)

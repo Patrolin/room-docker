@@ -20,7 +20,7 @@ abstract class Server extends \http\Server
       } catch (\error\ConnectionClosed $e) { // I shouldn't have to do this, but PHP errors are terrible
         // pass
       }
-      if (isset($this->connections[$i]))
+      if (isset($this->connections[$i]) && $this->connections[$i]->request)
         $this->websocketTick($i);
     } else if ($this->acceptWebsocket($i)) {
       $this->websocketHandshake($i);
@@ -58,7 +58,7 @@ abstract class Server extends \http\Server
               $conn->send(\websocket\createMessage(1, \websocket\PONG, $payload));
               $conn->lastPing = $now; // don't PING if client already did
             case \websocket\PONG:
-              $conn->lastPong = $now; // don't close connection if either of us successfully PINGed
+              $conn->lastPong = $now; // don't close connection if either of us successfully (PING/PONG)ed
               $conn->acknowledge();
               break;
             default:
@@ -71,7 +71,7 @@ abstract class Server extends \http\Server
         }
         break;
       case \Connection::READ:
-        \error\assert(false, "Unhandled Websocket connection");
+        break;
       case \Connection::CLOSED:
         unset($this->connections[$i]);
         break;

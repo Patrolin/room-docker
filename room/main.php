@@ -235,15 +235,11 @@ class App extends websocket\Server
             break;
           case "msg":
             $B = $in["B"];
-            $timestamp = $this->database->send_message($A, $B, $in["msg"]);
-            if ($timestamp === false) {
-              $conn->suspend();
-              return;
-            }
+            $id = $this->database->send_message($A, $B, $in["msg"]);
             foreach ($this->connections as $c) {
               if ($c instanceof websocket\Connection) {
                 if ($c->room_state["uuid"] === $A || $c->room_state["uuid"] === $B)
-                  $this->sendMessage($c, $A, $B, $timestamp, $in["msg"]);
+                  $this->sendMessage($c, $id, $A, $B, $in["msg"]);
               }
             }
             break;
@@ -260,13 +256,13 @@ class App extends websocket\Server
       "msg" => $this->database->get_user_info($A),
     ])));
   }
-  function sendMessage($c, string $A, string $B, int $timestamp, string $msg)
+  function sendMessage($c, int $id, string $A, string $B, string $msg)
   {
     $c->send(websocket\createMessage(1, websocket\TEXT, json_encode([
+      "id" => $id . "",
       "type" => "msg",
       "A" => $A . "",
       "B" => $B . "",
-      "timestamp" => $timestamp . "",
       "msg" => $msg,
     ])));
   }

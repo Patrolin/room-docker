@@ -35,59 +35,61 @@ class Connection extends \Connection
     \error\assert($this->state !== Connection::READ, "Cannot read() on Connection::READ");
     \error\assert($this->state !== Connection::CLOSED, "Cannot read() on Connection::CLOSED", "ConnectionClosed");
 
-    if ($msg = socket_read($this->sock, $bytes)) {
-      $this->buffer .= $msg;
-      try {
-        [
-          "msgLength" => $msgLength,
-          "FIN" => $FIN,
-          "opcode" => $opcode,
-          "payload" => $payload
-        ] = \websocket\parseMessage($this->buffer);
-      } catch (\error\IncompleteRequest $e) {
-        return;
-      } catch (\error\BadRequest $e) {
-        $this->close();
-        return;
-      }
-
-      if ($FIN) {
-        if (\websocket\isControlFrame($opcode)) {
-          $this->request = substr($this->buffer, 0, $msgLength);
-          $this->state = Connection::READ;
-        } else if ($opcode !== \websocket\CONTINUED) {
-          \error\assert($this->fragmentOpcode === 0, "Fragment must have an ending");
-          $this->request = substr($this->buffer, 0, $msgLength);
-          $this->state = Connection::READ;
-        } else {
-          \error\assert($this->fragmentOpcode !== 0, "Fragment must have a beginning");
-          $opcode = $this->fragmentOpcode;
-          $payload = $this->fragment . $payload;
-          $this->request = \websocket\createMessage(1, $opcode, $payload);
-          $this->fragmentOpcode = 0;
-          $this->fragment = "";
-          $this->state = Connection::READ;
-        }
-
-        if ($opcode === \websocket\TEXT && !\utils\isUTF8($payload)) {
-          $this->close(); // TODO(): implement websocket status codes
-        }
-      } else {
-        if ($opcode !== \websocket\CONTINUED) {
-          \error\assert($this->fragmentOpcode === 0);
-          $this->fragmentOpcode = $opcode;
-          $this->fragment = $payload;
-        } else
-          $this->fragment .= $payload;
-      }
-      $this->buffer = substr($this->buffer, $msgLength);
-    } else {
+    $msg = socket_read($this->sock, $bytes);
+    if ($msg === false) {
       $err = socket_last_error($this->sock);
       if ($err !== \socket\ERROR_AGAIN) {
         echo "\nREAD " . $err . ": " . socket_strerror($err) . "\n";
         $this->close();
+        return;
       }
     }
+
+    $this->buffer .= $msg;
+    try {
+      [
+        "msgLength" => $msgLength,
+        "FIN" => $FIN,
+        "opcode" => $opcode,
+        "payload" => $payload
+      ] = \websocket\parseMessage($this->buffer);
+    } catch (\error\IncompleteRequest $e) {
+      return;
+    } catch (\error\BadRequest $e) {
+      $this->close();
+      return;
+    }
+
+    if ($FIN) {
+      if (\websocket\isControlFrame($opcode)) {
+        $this->request = substr($this->buffer, 0, $msgLength);
+        $this->state = Connection::READ;
+      } else if ($opcode !== \websocket\CONTINUED) {
+        \error\assert($this->fragmentOpcode === 0, "Fragment must have an ending");
+        $this->request = substr($this->buffer, 0, $msgLength);
+        $this->state = Connection::READ;
+      } else {
+        \error\assert($this->fragmentOpcode !== 0, "Fragment must have a beginning");
+        $opcode = $this->fragmentOpcode;
+        $payload = $this->fragment . $payload;
+        $this->request = \websocket\createMessage(1, $opcode, $payload);
+        $this->fragmentOpcode = 0;
+        $this->fragment = "";
+        $this->state = Connection::READ;
+      }
+
+      if ($opcode === \websocket\TEXT && !\utils\isUTF8($payload)) {
+        $this->close(); // TODO(): implement websocket status codes
+      }
+    } else {
+      if ($opcode !== \websocket\CONTINUED) {
+        \error\assert($this->fragmentOpcode === 0);
+        $this->fragmentOpcode = $opcode;
+        $this->fragment = $payload;
+      } else
+        $this->fragment .= $payload;
+    }
+    $this->buffer = substr($this->buffer, $msgLength);
   }
 
   function acknowledge()
@@ -96,6 +98,7 @@ class Connection extends \Connection
     \error\assert($this->state !== Connection::CLOSED, "Cannot acknowledge() on Connection::CLOSED");
 
     $this->request = "";
+    $this->response = "";
     $this->state = Connection::OPEN;
   }
 

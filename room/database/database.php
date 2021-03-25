@@ -240,7 +240,7 @@ class Database
       ":uuid" => $B,
     ]);
     if ($stmt->fetch()["table"] === \database\users) {
-      $stmt = $this->conn->prepare("SELECT * FROM `messages` WHERE (`A` = :A1 AND `B` = :B1) OR (`A` = :B2 AND `B` = :A2) ORDER BY `timestamp`");
+      $stmt = $this->conn->prepare("SELECT * FROM `messages` WHERE (`A` = :A1 AND `B` = :B1) OR (`A` = :B2 AND `B` = :A2) ORDER BY `id`");
       $stmt->execute([
         ":A1" => $A,
         ":B1" => $B,
@@ -248,7 +248,7 @@ class Database
         ":B2" => $B,
       ]);
     } else {
-      $stmt = $this->conn->prepare("SELECT * FROM `messages` WHERE `B` = :B ORDER BY `timestamp`");
+      $stmt = $this->conn->prepare("SELECT * FROM `messages` WHERE `B` = :B ORDER BY `id`");
       $stmt->execute([
         ":B" => $B,
       ]);
@@ -256,9 +256,9 @@ class Database
     $res = [];
     foreach ($stmt->fetchAll() as $row) {
       $res[] = [
+        "id" => $row["id"] . "",
         "A" => $row["A"] . "",
         "B" => $row["B"] . "",
-        "timestamp" => $row["timestamp"] . "",
         "msg" => $row["msg"] . "",
       ];
     }
@@ -266,14 +266,14 @@ class Database
   }
   function send_message(string $A, string $B, string $msg)
   {
-    $timestamp = time();
-    $stmt = $this->conn->prepare("INSERT INTO `messages` (`A`, `B`, `timestamp`, `msg`) VALUES (:A, :B, :timestamp, :msg)");
-    $messages = $stmt->execute([
+    $stmt = $this->conn->prepare("INSERT INTO `messages` (`A`, `B`, `msg`) VALUES (:A, :B, :msg)");
+    $stmt->execute([
       ":A" => $A,
       ":B" => $B,
-      ":timestamp" => $timestamp,
       ":msg" => $msg,
     ]);
-    return $messages !== false ? $timestamp : false;
+
+    $stmt = $this->conn->query("SELECT LAST_INSERT_ID()");
+    return $stmt->fetch()["LAST_INSERT_ID()"];
   }
 }
