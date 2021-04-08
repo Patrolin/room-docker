@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <head>
+  <title>Instant Messaging: login</title>
   <script src="shared/qPact.js"></script>
   <script src="shared/black-magic.js"></script>
   <script src="shared/http.js"></script>
@@ -60,9 +61,9 @@
                   body: createRequestBody({
                     login,
                     username: this.username.value,
-                    password1: this.password1.value,
+                    password1: this.password1.value
                     //password2: this.password1.value, // redundant
-                  }),
+                  })
                 }).then((x) => {
                   if (x) {
                     setCookie(x);
@@ -85,8 +86,8 @@
           method: this.form.method,
           body: createRequestBody({
             login: login,
-            username: this.username.value,
-          }),
+            username: this.username.value
+          })
         }).then((x) => {
           if (this.username.value && requestNonce === this.usernameNonce) {
             switch (login) {
