@@ -22,6 +22,7 @@ class Database
     while (true) {
       try {
         $this->connect($dbhost, $dbname, $username, $password);
+        $stmt = $this->conn->prepare("SELECT * FROM `sessions` WHERE `token` = :token");
         break;
       } catch (\PDOException $e) {
         // PDOException is protected so i literally can't do anything here
