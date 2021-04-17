@@ -1,0 +1,17 @@
+
+[Unit]
+Description=Pagekite tunnel
+Requires=network.target
+After=syslog.target network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/Desktop/room-docker/room
+ExecStart=python2 /home/pi/Desktop/tunnel/pagekite.py
+KillMode=process
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
