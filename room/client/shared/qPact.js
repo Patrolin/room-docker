@@ -1,7 +1,7 @@
 const QPACT_VERSION = 'D3';
 function qDescribe(input) {
   return `${
-    input != undefined ? `<${input.constructor.name}>` : ''
+    input != null ? `<${input.constructor.name}>` : ''
   }${input}`;
 }
 
