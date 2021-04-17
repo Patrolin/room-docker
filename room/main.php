@@ -70,6 +70,7 @@ class App extends websocket\Server
         $response = http\createResponse(http\OK, $responseHeaders, file_get_contents("client/index.html"));
         break;
       case "./chat":
+      case "./chat/":
         $session = $this->database->load_session($cookie["SESSION"] ?? null);
         if ($session !== false)
           $response = http\createResponse(http\OK, $responseHeaders, file_get_contents("client/chat.html"));
@@ -80,6 +81,7 @@ class App extends websocket\Server
         break;
       case "./login":
       case "./login/":
+        // ...
         switch ($method) {
           case "GET":
             $session = $this->database->load_session($cookie["SESSION"] ?? null);
