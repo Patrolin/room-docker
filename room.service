@@ -1,0 +1,20 @@
+
+[Unit]
+Description=Room chat server
+Requires=mysqld.service network.target
+After=syslog.target mysqld.service
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/Desktop/room-docker/room
+ExecStart=bash -c 'source /home/pi/.profile && php main.php'
+KillMode=process
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=room
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
