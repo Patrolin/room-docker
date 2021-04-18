@@ -22,12 +22,13 @@ class Database
     while (true) {
       try {
         $this->connect($dbhost, $dbname, $username, $password);
-        $stmt = $this->conn->prepare("SELECT * FROM `sessions` WHERE `token` = :token");
-        if ($stmt) break;
+        $stmt1 = $this->conn->prepare("SELECT * FROM `sessions` WHERE `token` = :token");
+        $stmt2 = $this->conn->query("SELECT UUID_SHORT()");
+        if ($stmt1 && $stmt2) break;
       } catch (\PDOException $e) {
         // PDOException is protected so i literally can't do anything here
-        sleep(10);
       };
+      sleep(5);
     }
     var_dump("Connected to database!");
   }
