@@ -1,0 +1,10 @@
+GET /login HTTP/1.1
+Connection: Upgrade
+Upgrade: websocket
+Sec-WebSocket-Version: 13
+Sec-WebSocket-Key: O7/k2eLNJh472MC8ofwSig==
+
+HTTP/1.1 101 Switching protocols
+Connection: Upgrade
+Upgrade: websocket
+Sec-WebSocket-Accept: NeJ9dgSHY9uBcPH7EZIQQ3BkSuA=

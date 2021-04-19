@@ -81,7 +81,6 @@ class App extends websocket\Server
         break;
       case "./login":
       case "./login/":
-        // ...
         switch ($method) {
           case "GET":
             $session = $this->database->load_session($cookie["SESSION"] ?? null);
