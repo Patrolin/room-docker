@@ -36,6 +36,7 @@ class Database
   function connect($dbhost, $dbname, $username = "root", $password = "")
   {
     $this->conn = new \PDO("mysql:host=$dbhost;dbname=$dbname", $username, $password);
+    $this->conn->setAttribute(\PDO::ATTR_PERSISTENT, true);
     $this->conn->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
     $this->conn->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_SILENT);
     $this->conn->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_NAMED);
